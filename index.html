@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>VEXT | Secure Payment Bridge</title>
+    
+    <!-- This pulls in the styling framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { 
+            background-color: #050505; 
+            margin: 0; 
+            padding: 0; 
+            overflow-x: hidden; 
+            color: #f1f5f9;
+        }
+
+        /* This creates the scrolling price ticker effect */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee { 
+            display: flex; 
+            animation: marquee 30s linear infinite; 
+        }
+
+        /* This creates the smooth "fade-up" effect when the vault loads */
+        .animate-in { 
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Makes the scrollbar look professional in the mnemonic box */
+        textarea::-webkit-scrollbar { width: 4px; }
+        textarea::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+    </style>
+</head>
+<body></body>
+</html>

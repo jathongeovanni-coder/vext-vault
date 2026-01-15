@@ -1,0 +1,11 @@
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\deps\bip39-5717290b8173bdaa.d: C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\lib.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\internal_macros.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\mod.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\english.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\pbkdf2.rs
+
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\deps\libbip39-5717290b8173bdaa.rlib: C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\lib.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\internal_macros.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\mod.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\english.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\pbkdf2.rs
+
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\deps\libbip39-5717290b8173bdaa.rmeta: C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\lib.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\internal_macros.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\mod.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\english.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\pbkdf2.rs
+
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\lib.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\internal_macros.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\mod.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\language\english.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\bip39-2.2.2\src\pbkdf2.rs:
