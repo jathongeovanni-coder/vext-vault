@@ -3,19 +3,8 @@
   "github": {
     "silent": true
   },
-  "buildCommand": "sh build.sh",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "dist",
-  "headers": [
-    {
-      "source": "/(.*)\\.wasm$",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/wasm"
-        }
-      ]
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
