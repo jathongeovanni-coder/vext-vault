@@ -1,15 +1,8 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+set -euo pipefail
 
-# Install Rust
-curl https://sh.rustup.rs -sSf | sh -s -- -y
-export PATH="$HOME/.cargo/bin:$PATH"
-
-# Add wasm target
-rustup target add wasm32-unknown-unknown
-
-# Install trunk
-cargo install trunk --locked
-
-# Build WASM
-trunk build --release
+# --- FIX VERCEL RUSTUP HOME MISMATCH ---
+export HOME=/root
+export CARGO_HOME=/root/.cargo
+export RUSTUP_HOME=/root/.rustup
+export RUSTUP_INIT_SKIP_PATH_CHECK=yes
