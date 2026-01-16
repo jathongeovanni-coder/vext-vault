@@ -1,12 +1,26 @@
 {
   "cleanUrls": true,
+  "github": {
+    "silent": true
+  },
+  "buildCommand": "trunk build --release --public-url /",
+  "installCommand": "rustup target add wasm32-unknown-unknown && cargo fetch",
+  "outputDirectory": "dist",
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/(.*)\\.wasm$",
       "headers": [
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+        {
+          "key": "Content-Type",
+          "value": "application/wasm"
+        }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
