@@ -3,8 +3,7 @@
   "github": {
     "silent": true
   },
-  "buildCommand": "trunk build --release --public-url /",
-  "installCommand": "rustup target add wasm32-unknown-unknown && cargo fetch",
+  "buildCommand": "sh build.sh",
   "outputDirectory": "dist",
   "headers": [
     {
