@@ -1,29 +1,37 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -e
 
 echo "== VEXT Vault Vercel Build =="
 
-export CARGO_HOME="${VERCEL_CACHE_DIR:-/tmp}/.cargo"
-export RUSTUP_HOME="${VERCEL_CACHE_DIR:-/tmp}/.rustup"
+# Use Vercel cache if available
+export CARGO_HOME="$PWD/.cargo"
+export RUSTUP_HOME="$PWD/.rustup"
 export PATH="$CARGO_HOME/bin:$PATH"
 
 # Install Rust if missing
 if ! command -v cargo >/dev/null 2>&1; then
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-    | sh -s -- -y --profile minimal
+  echo "Installing Rust..."
+  curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+fi
+
+# 🔴 THIS IS THE FIX 🔴
+# Force-load cargo into PATH for non-interactive shell
+if [ -f "$CARGO_HOME/env" ]; then
   source "$CARGO_HOME/env"
+elif [ -f "$HOME/.cargo/env" ]; then
+  source "$HOME/.cargo/env"
 fi
 
 rustup target add wasm32-unknown-unknown
 
-# Install trunk (prebuilt)
+# Install trunk (fast path)
 if ! command -v trunk >/dev/null 2>&1; then
-  curl -Ls https://github.com/trunk-rs/trunk/releases/download/v0.21.4/trunk-x86_64-unknown-linux-gnu.tar.gz \
-    | tar -xz -C "$CARGO_HOME/bin"
+  echo "Installing trunk..."
+  wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.21.4/trunk-x86_64-unknown-linux-gnu.tar.gz \
+    | tar -xzf- -C "$CARGO_HOME/bin"
 fi
 
-echo "Building WASM…"
+echo "Running trunk build..."
 trunk build --release --dist dist --public-url /
 
-echo "Build output:"
-ls -lah dist/
+echo "✅ Build complete"
