@@ -1,21 +1,31 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
-# --- Fix HOME mismatch on Vercel ---
+echo "== Vercel Rust + Trunk build =="
+
+# Fix HOME mismatch on Vercel
 export HOME=/root
 export CARGO_HOME=/root/.cargo
 export RUSTUP_HOME=/root/.rustup
-export RUSTUP_INIT_SKIP_PATH_CHECK=yes
+export PATH="$CARGO_HOME/bin:$PATH"
 
-# --- Install Rust (minimal) ---
-curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-source /root/.cargo/env
+# Install Rust (only if missing)
+if ! command -v cargo >/dev/null 2>&1; then
+  curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+fi
 
-# --- Add WASM target ---
+source "$CARGO_HOME/env"
+
+# WASM target
 rustup target add wasm32-unknown-unknown
 
-# --- Install Trunk ---
-cargo install trunk --locked
+# Trunk
+if ! command -v trunk >/dev/null 2>&1; then
+  cargo install trunk
+fi
 
-# --- Build Leptos app ---
+# Build
 trunk build --release --dist dist --public-url /
+
+echo "== Build finished =="
+ls -la dist

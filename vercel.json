@@ -1,16 +1,5 @@
 {
-  "cleanUrls": true,
   "buildCommand": "bash build.sh",
   "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)\\.wasm$",
-      "headers": [
-        { "key": "Content-Type", "value": "application/wasm" }
-      ]
-    }
-  ]
+  "framework": null
 }
