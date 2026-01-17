@@ -1,31 +1,32 @@
 #!/usr/bin/env bash
 set -e
 
-echo "== Vercel Rust + Trunk build =="
+echo "== VEXT Vault Build =="
 
-# Fix HOME mismatch on Vercel
-export HOME=/root
-export CARGO_HOME=/root/.cargo
-export RUSTUP_HOME=/root/.rustup
+# Use Vercel's cache directory
+export CARGO_HOME="${VERCEL_CACHE_DIR:-/tmp/cache}/.cargo"
+export RUSTUP_HOME="${VERCEL_CACHE_DIR:-/tmp/cache}/.rustup"
 export PATH="$CARGO_HOME/bin:$PATH"
 
-# Install Rust (only if missing)
+# Install Rust only if not cached
 if ! command -v cargo >/dev/null 2>&1; then
-  curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+  echo "Installing Rust..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+  source "$CARGO_HOME/env"
 fi
 
-source "$CARGO_HOME/env"
-
-# WASM target
+# Add WASM target
 rustup target add wasm32-unknown-unknown
 
-# Trunk
+# Install Trunk (check cache first)
 if ! command -v trunk >/dev/null 2>&1; then
-  cargo install trunk
+  echo "Installing Trunk..."
+  cargo install --locked trunk
 fi
 
-# Build
+# Build with release optimizations
+echo "Building WASM application..."
 trunk build --release --dist dist --public-url /
 
-echo "== Build finished =="
-ls -la dist
+echo "✅ Build complete"
+ls -lah dist/
