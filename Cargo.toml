@@ -2,41 +2,63 @@
 name = "vext_vault"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0 OR MIT"
+description = "VEXT Vault - Human Intent Attestation Infrastructure"
+authors = ["VEXT Labs <security@vext.com>"]
+
+[lib]
+# This defines the project as a dynamic library for WASM compilation.
+crate-type = ["cdylib"]
 
 [dependencies]
-# Web Framework for the UI
+# --- Leptos Core (CSR-only for WASM) ---
 leptos = { version = "0.6", features = ["csr"] }
+
+# --- WASM / Browser Bindings ---
 wasm-bindgen = "0.2"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-gloo-net = "0.5"
-gloo-timers = "0.3"
-console_error_panic_hook = "0.1"
+js-sys = "0.3"
 
-# Cryptography & Security
-aes-gcm = "0.10"
-bip39 = { version = "2.0", features = ["rand"] }
-pbkdf2 = "0.12"
-sha2 = "0.10"
-hmac = "0.12"
-getrandom = { version = "0.2", features = ["js"] } 
-
-# Web System Interaction
 web-sys = { version = "0.3", features = [
-    "Window", 
-    "console", 
-    "Document", 
-    "HtmlElement", 
-    "Storage",
-    "Location",
-    "UrlSearchParams",
-    "Url",
-    "TouchEvent",
-    "MouseEvent"
+  "Window",
+  "Document",
+  "HtmlElement",
+  "Location",
+  "Element",
+  "UrlSearchParams",
+  "console",
+  "MouseEvent",
+  "TouchEvent"
 ] }
 
+# --- Async / Timing ---
+futures = "0.3"
+
+gloo-timers = { version = "0.3", features = [
+  "futures"   # REQUIRED for TimeoutFuture. Interval is included by default.
+] }
+
+gloo-net = { version = "0.5", features = ["http"] }
+
+# --- Crypto & Security ---
+sha2 = "0.10"
+base64 = "0.22"
+zeroize = { version = "1.7", features = ["serde"] }
+
+# --- Serialization ---
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# --- Debugging ---
+console_error_panic_hook = "0.1"
+wasm-bindgen-futures = "0.4.58"
+
+# --- Target-Specific Requirements ---
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
 [profile.release]
-opt-level = 'z'
 lto = true
+opt-level = "z"
 codegen-units = 1
-panic = 'abort'
+panic = "abort"
+strip = "symbols"

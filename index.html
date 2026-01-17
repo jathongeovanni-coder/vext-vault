@@ -1,45 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>VEXT | Secure Payment Bridge</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VEXT Vault | Secure Authorization Bridge</title>
     
-    <!-- This pulls in the styling framework -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Trunk configuration for WASM asset resolution -->
+    <base data-trunk-public-url />
+    <link rel="rust" data-trunk href="Cargo.toml" />
     
+    <!-- Modern UI Styling for the pre-load environment -->
     <style>
         body { 
-            background-color: #050505; 
+            background-color: #020617; 
+            color: white; 
             margin: 0; 
-            padding: 0; 
-            overflow-x: hidden; 
-            color: #f1f5f9;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            overflow: hidden; 
+            height: 100vh; 
+            width: 100vw; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* This creates the scrolling price ticker effect */
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        .animate-marquee { 
-            display: flex; 
-            animation: marquee 30s linear infinite; 
+        #bridge-loader { 
+            text-align: center;
+            position: absolute;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
         }
 
-        /* This creates the smooth "fade-up" effect when the vault loads */
-        .animate-in { 
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        .ring { 
+            width: 44px; 
+            height: 44px; 
+            border: 3px solid rgba(59, 130, 246, 0.1); 
+            border-top-color: #3b82f6; 
+            border-radius: 50%; 
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+            margin: 0 auto;
         }
 
-        /* Makes the scrollbar look professional in the mnemonic box */
-        textarea::-webkit-scrollbar { width: 4px; }
-        textarea::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+
+        .status { 
+            margin-top: 24px; 
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5em; 
+            color: #3b82f6; 
+            animation: pulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+        }
+
+        @keyframes pulse { 
+            0%, 100% { opacity: 1; } 
+            50% { opacity: 0.3; } 
+        }
+
+        /* Accessibility: Support for users who prefer reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .ring, .status {
+                animation: none;
+            }
+            #bridge-loader {
+                transition: none;
+            }
+        }
+
+        /* Prevent layout shift once Rust mounts */
+        #vext-root {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
-<body></body>
+<body>
+    <noscript>
+        <div style="color: #94a3b8; font-family: ui-monospace, monospace; font-size: 12px; text-align: center; padding: 20px;">
+            CRITICAL ERROR: JavaScript and WebAssembly are required to initialize the VEXT Vault.
+        </div>
+    </noscript>
+
+    <!-- 
+      Institutional Loader: 
+      The Rust main() function will physically remove this node from the DOM 
+      the moment the WASM application is ready to render.
+    -->
+    <div id="bridge-loader" role="status" aria-live="polite" aria-busy="true">
+        <div class="ring"></div>
+        <p class="status">Establishing VEXT Bridge</p>
+    </div>
+
+    <!-- Deterministic App Mount Point -->
+    <div id="vext-root"></div>
+</body>
 </html>
