@@ -95,9 +95,11 @@ pub fn App() -> impl IntoView {
                 .call0(&SOLANA)
                 .unwrap();
 
-            let res = JsFuture::from(Promise::from(promise)).await.unwrap();
-            let pk = Reflect::get(&res, &"publicKey".into()).unwrap();
+            let res = JsFuture::from(Promise::from(promise))
+                .await
+                .unwrap();
 
+            let pk = Reflect::get(&res, &"publicKey".into()).unwrap();
             set_wallet_key.set(pk.as_string().unwrap_or_default());
             set_wallet_connected.set(true);
         });
@@ -118,7 +120,10 @@ pub fn App() -> impl IntoView {
                 .call1(&SOLANA, &bytes.into())
                 .unwrap();
 
-            let _ = JsFuture::from(Promise::from(promise)).await.unwrap();
+            let _ = JsFuture::from(Promise::from(promise))
+                .await
+                .unwrap();
+
             set_paid.set(true);
         });
     };
@@ -161,7 +166,7 @@ pub fn App() -> impl IntoView {
 
     /* -------- UI -------- */
 
-    view! {
+    return view! {
         <div class="min-h-screen bg-slate-950 text-white p-10 font-mono">
             <h1 class="text-3xl font-black mb-6">"VEXT VAULT"</h1>
 
@@ -197,7 +202,7 @@ pub fn App() -> impl IntoView {
                 " " {pay_prog} "%"
             </button>
         </div>
-    }
+    };
 }
 
 /* ===================== ENTRY ===================== */
@@ -210,7 +215,7 @@ pub fn main() {
         .get_element_by_id("vext-root")
         .expect("vext-root not found")
         .dyn_into::<HtmlElement>()
-        .expect("vext-root is not HtmlElement");
+        .expect("vext-root not HtmlElement");
 
     mount_to(root, || view! { <App /> });
 
