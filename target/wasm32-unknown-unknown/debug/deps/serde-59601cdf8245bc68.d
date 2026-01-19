@@ -1,0 +1,14 @@
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\deps\serde-59601cdf8245bc68.d: C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\build\serde-59105c4696a95515\out/private.rs
+
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\deps\libserde-59601cdf8245bc68.rlib: C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\build\serde-59105c4696a95515\out/private.rs
+
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\deps\libserde-59601cdf8245bc68.rmeta: C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\build\serde-59105c4696a95515\out/private.rs
+
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\Gail\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\Gail\Desktop\VEXT_FINAL\target\wasm32-unknown-unknown\debug\build\serde-59105c4696a95515\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\Gail\\Desktop\\VEXT_FINAL\\target\\wasm32-unknown-unknown\\debug\\build\\serde-59105c4696a95515\\out

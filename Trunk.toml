@@ -1,2 +1,16 @@
 [build]
-wasm_opt = false
+target = "index.html"
+dist = "dist"
+public_url = "/"
+release = true
+
+[watch]
+ignore = ["dist"]
+
+[serve]
+port = 8080
+open = false
+
+[clean]
+dist = "dist"
+cargo = false
