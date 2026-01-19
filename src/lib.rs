@@ -166,11 +166,11 @@ pub fn App() -> impl IntoView {
 
     /* -------- UI -------- */
 
-    return view! {
-        <div class="min-h-screen bg-slate-950 text-white p-10 font-mono">
-            <h1 class="text-3xl font-black mb-6">"VEXT VAULT"</h1>
+    view! {
+        <div class="app">
+            <h1>"VEXT VAULT"</h1>
 
-            <button on:click=connect_wallet class="mb-6 px-4 py-2 bg-purple-600 rounded">
+            <button class="wallet" on:click=connect_wallet>
                 {move || if wallet_connected.get() {
                     format!("CONNECTED {}", &wallet_key.get()[..6])
                 } else {
@@ -178,31 +178,37 @@ pub fn App() -> impl IntoView {
                 }}
             </button>
 
-            <div class="flex gap-4 mb-6">
-                <button on:click=move |_| set_asset.set(Asset::BTC)>"BTC $" {btc}</button>
-                <button on:click=move |_| set_asset.set(Asset::ETH)>"ETH $" {eth}</button>
-                <button on:click=move |_| set_asset.set(Asset::SOL)>"SOL $" {sol}</button>
+            <div class="asset">
+                <button on:click=move |_| set_asset.set(Asset::BTC)>
+                    "BTC $" {btc}
+                </button>
+                <button on:click=move |_| set_asset.set(Asset::ETH)>
+                    "ETH $" {eth}
+                </button>
+                <button on:click=move |_| set_asset.set(Asset::SOL)>
+                    "SOL $" {sol}
+                </button>
             </div>
 
             <button
+                class="unlock"
                 on:mousedown=start_unlock
                 on:mouseup=move |_| set_holding_unlock.set(false)
-                class="w-full py-4 bg-slate-800 rounded mb-4"
             >
                 "HOLD TO UNLOCK " {unlock_prog} "%"
             </button>
 
             <button
+                class="pay"
                 on:mousedown=start_pay
                 on:mouseup=move |_| set_holding_pay.set(false)
                 disabled=move || !unlocked.get()
-                class="w-full py-4 bg-green-600 rounded disabled:opacity-30"
             >
                 {move || if paid.get() { "SIGNED ✓" } else { "HOLD TO SIGN & PAY" }}
                 " " {pay_prog} "%"
             </button>
         </div>
-    };
+    }
 }
 
 /* ===================== ENTRY ===================== */
@@ -218,8 +224,4 @@ pub fn main() {
         .expect("vext-root not HtmlElement");
 
     mount_to(root, || view! { <App /> });
-
-    if let Some(loader) = leptos::document().get_element_by_id("bridge-loader") {
-        loader.remove();
-    }
 }
