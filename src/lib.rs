@@ -12,7 +12,7 @@ use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = solana)]
+    #[wasm_bindgen(thread_local_v2, js_namespace = window, js_name = solana)]
     static SOLANA: JsValue;
 }
 
@@ -23,6 +23,16 @@ enum Asset {
     BTC,
     ETH,
     SOL,
+}
+
+impl Asset {
+    fn symbol(&self) -> &'static str {
+        match self {
+            Asset::BTC => "BTC",
+            Asset::ETH => "ETH",
+            Asset::SOL => "SOL",
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -52,6 +62,7 @@ pub fn App() -> impl IntoView {
     // Wallet
     let (wallet_connected, set_wallet_connected) = create_signal(false);
     let (wallet_key, set_wallet_key) = create_signal(String::new());
+    let (wallet_error, set_wallet_error) = create_signal(None::<String>);
 
     // Market
     let (btc, set_btc) = create_signal("—".into());
@@ -68,9 +79,14 @@ pub fn App() -> impl IntoView {
                 symbol
             );
 
-            if let Ok(resp) = Request::get(&url).send().await {
-                if let Ok(json) = resp.json::<CoinbaseResp>().await {
-                    setter.set(json.data.amount);
+            match Request::get(&url).send().await {
+                Ok(resp) => {
+                    if let Ok(json) = resp.json::<CoinbaseResp>().await {
+                        setter.set(json.data.amount);
+                    }
+                }
+                Err(e) => {
+                    web_sys::console::error_1(&format!("Price fetch error: {:?}", e).into());
                 }
             }
         });
@@ -86,45 +102,43 @@ pub fn App() -> impl IntoView {
 
     let connect_wallet = move |_| {
         spawn_local(async move {
-            if SOLANA.is_undefined() {
+            set_wallet_error.set(None);
+
+            // Check if Solana wallet is available
+            if SOLANA.with(|s| s.is_undefined()) {
+                set_wallet_error.set(Some("No Solana wallet detected. Please install Phantom, Solflare, or another Solana wallet.".into()));
                 return;
             }
 
-            let connect_fn = Reflect::get(&SOLANA, &"connect".into()).unwrap();
-            let promise = js_sys::Function::from(connect_fn)
-                .call0(&SOLANA)
-                .unwrap();
-
-            let res = JsFuture::from(Promise::from(promise))
-                .await
-                .unwrap();
-
-            let pk = Reflect::get(&res, &"publicKey".into()).unwrap();
-            set_wallet_key.set(pk.as_string().unwrap_or_default());
-            set_wallet_connected.set(true);
+            match try_connect_wallet().await {
+                Ok(pubkey) => {
+                    set_wallet_key.set(pubkey);
+                    set_wallet_connected.set(true);
+                }
+                Err(e) => {
+                    set_wallet_error.set(Some(format!("Connection failed: {}", e)));
+                }
+            }
         });
     };
 
     let sign_payment = move || {
         spawn_local(async move {
             let message = format!(
-                "VEXT PAYMENT\nAsset: {:?}\nTimestamp: {}",
-                asset.get(),
+                "VEXT PAYMENT\nAsset: {}\nTimestamp: {}",
+                asset.get().symbol(),
                 js_sys::Date::now()
             );
 
-            let bytes = Uint8Array::from(message.as_bytes());
-            let sign_fn = Reflect::get(&SOLANA, &"signMessage".into()).unwrap();
-
-            let promise = js_sys::Function::from(sign_fn)
-                .call1(&SOLANA, &bytes.into())
-                .unwrap();
-
-            let _ = JsFuture::from(Promise::from(promise))
-                .await
-                .unwrap();
-
-            set_paid.set(true);
+            match try_sign_message(&message).await {
+                Ok(_) => {
+                    set_paid.set(true);
+                }
+                Err(e) => {
+                    web_sys::console::error_1(&format!("Signing error: {}", e).into());
+                    set_wallet_error.set(Some(format!("Signing failed: {}", e)));
+                }
+            }
         });
     };
 
@@ -146,7 +160,12 @@ pub fn App() -> impl IntoView {
     };
 
     let start_pay = move |_| {
-        if !wallet_connected.get_untracked() || !unlocked.get_untracked() {
+        if !wallet_connected.get_untracked() {
+            set_wallet_error.set(Some("Please connect your wallet first".into()));
+            return;
+        }
+
+        if !unlocked.get_untracked() {
             return;
         }
 
@@ -172,20 +191,38 @@ pub fn App() -> impl IntoView {
 
             <button class="wallet" on:click=connect_wallet>
                 {move || if wallet_connected.get() {
-                    format!("CONNECTED {}", &wallet_key.get()[..6])
+                    let key = wallet_key.get();
+                    if key.len() >= 8 {
+                        format!("CONNECTED {}...{}", &key[..4], &key[key.len()-4..])
+                    } else {
+                        "CONNECTED".into()
+                    }
                 } else {
                     "CONNECT WALLET".into()
                 }}
             </button>
 
+            {move || wallet_error.get().map(|err| view! {
+                <div class="error">{err}</div>
+            })}
+
             <div class="asset">
-                <button on:click=move |_| set_asset.set(Asset::BTC)>
+                <button 
+                    on:click=move |_| set_asset.set(Asset::BTC)
+                    class:selected=move || asset.get() == Asset::BTC
+                >
                     "BTC $" {btc}
                 </button>
-                <button on:click=move |_| set_asset.set(Asset::ETH)>
+                <button 
+                    on:click=move |_| set_asset.set(Asset::ETH)
+                    class:selected=move || asset.get() == Asset::ETH
+                >
                     "ETH $" {eth}
                 </button>
-                <button on:click=move |_| set_asset.set(Asset::SOL)>
+                <button 
+                    on:click=move |_| set_asset.set(Asset::SOL)
+                    class:selected=move || asset.get() == Asset::SOL
+                >
                     "SOL $" {sol}
                 </button>
             </div>
@@ -194,21 +231,87 @@ pub fn App() -> impl IntoView {
                 class="unlock"
                 on:mousedown=start_unlock
                 on:mouseup=move |_| set_holding_unlock.set(false)
+                on:touchstart=start_unlock
+                on:touchend=move |_| set_holding_unlock.set(false)
             >
-                "HOLD TO UNLOCK " {unlock_prog} "%"
+                {move || if unlocked.get() {
+                    "UNLOCKED ✓".to_string()
+                } else {
+                    format!("HOLD TO UNLOCK {}%", unlock_prog.get())
+                }}
             </button>
 
             <button
                 class="pay"
                 on:mousedown=start_pay
                 on:mouseup=move |_| set_holding_pay.set(false)
+                on:touchstart=start_pay
+                on:touchend=move |_| set_holding_pay.set(false)
                 disabled=move || !unlocked.get()
             >
-                {move || if paid.get() { "SIGNED ✓" } else { "HOLD TO SIGN & PAY" }}
-                " " {pay_prog} "%"
+                {move || if paid.get() { 
+                    "SIGNED ✓".to_string() 
+                } else { 
+                    format!("HOLD TO SIGN & PAY {}%", pay_prog.get())
+                }}
             </button>
         </div>
     }
+}
+
+/* ===================== WALLET HELPERS ===================== */
+
+async fn try_connect_wallet() -> Result<String, String> {
+    SOLANA.with(|solana| {
+        let connect_fn = Reflect::get(solana, &"connect".into())
+            .map_err(|_| "Failed to get connect function")?;
+        
+        let promise = js_sys::Function::from(connect_fn)
+            .call0(solana)
+            .map_err(|_| "Failed to call connect")?;
+
+        spawn_local(async move {
+            match JsFuture::from(Promise::from(promise)).await {
+                Ok(res) => {
+                    let pk = Reflect::get(&res, &"publicKey".into())
+                        .map_err(|_| "Failed to get publicKey")?;
+                    
+                    let to_string = Reflect::get(&pk, &"toString".into())
+                        .map_err(|_| "Failed to get toString method")?;
+                    
+                    let result = js_sys::Function::from(to_string)
+                        .call0(&pk)
+                        .map_err(|_| "Failed to call toString")?;
+                    
+                    result.as_string().ok_or_else(|| "Public key not a string".to_string())
+                }
+                Err(_) => Err("User rejected connection".to_string())
+            }
+        });
+
+        Err("Connecting...".to_string())
+    })
+}
+
+async fn try_sign_message(message: &str) -> Result<JsValue, String> {
+    SOLANA.with(|solana| {
+        let bytes = Uint8Array::from(message.as_bytes());
+        
+        let sign_fn = Reflect::get(solana, &"signMessage".into())
+            .map_err(|_| "Failed to get signMessage function")?;
+
+        let promise = js_sys::Function::from(sign_fn)
+            .call1(solana, &bytes.into())
+            .map_err(|_| "Failed to call signMessage")?;
+
+        spawn_local(async move {
+            JsFuture::from(Promise::from(promise))
+                .await
+                .map_err(|_| "User rejected signature".to_string())
+        });
+
+        Err("Signing...".to_string())
+    })
 }
 
 /* ===================== ENTRY ===================== */
