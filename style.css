@@ -1,0 +1,95 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color: #e5e7eb;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* App shell */
+#app {
+  width: 420px;
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Title */
+h1 {
+  text-align: center;
+  font-size: 1.75rem;
+  margin-bottom: 20px;
+  letter-spacing: 0.04em;
+}
+
+/* Wallet button */
+button {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  color: #020617;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
+}
+
+/* Prices */
+.prices {
+  margin: 20px 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.price {
+  background: rgba(2, 6, 23, 0.7);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* Progress bars */
+.progress {
+  margin-top: 14px;
+}
+
+.progress label {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+.bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #020617;
+  overflow: hidden;
+}
+
+.bar > div {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22d3ee, #6366f1);
+  transition: width 0.3s ease;
+}
