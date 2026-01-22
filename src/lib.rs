@@ -65,7 +65,8 @@ pub fn App() -> impl IntoView {
     let (unlocked, set_unlocked) = create_signal(false);
     let (paid, set_paid) = create_signal(false);
     
-    // --- Session History (The Audit Log) ---
+    // --- Session History & Feedback ---
+    let (status_msg, set_status_msg) = create_signal("SYSTEM READY. WAITING FOR VECTOR 1.".to_string());
     let (attestations, set_attestations) = create_signal(Vec::<IntentAttestation>::new());
     
     // --- Progress & Interaction ---
@@ -101,32 +102,45 @@ pub fn App() -> impl IntoView {
     
     let verify_bio = move |_| {
         set_verifying_bio.set(true);
+        set_status_msg.set("SCANNING BIOMATRIX...".into());
         spawn_local(async move {
-            TimeoutFuture::new(1200).await; // Simulated High-Security Scan
+            TimeoutFuture::new(1200).await; 
             set_biometric_verified.set(true);
             set_verifying_bio.set(false);
+            set_status_msg.set("IDENTITY VERIFIED. ENGAGE HOLD TO REVEAL.".into());
         });
     };
 
     let start_unlock = move || {
         if !biometric_verified.get_untracked() { return; }
         set_holding_unlock.set(true);
+        set_status_msg.set("REVEALING VAULT DATA...".into());
         spawn_local(async move {
             for i in 1..=100 {
-                if !holding_unlock.get_untracked() { set_unlock_prog.set(0); return; }
+                if !holding_unlock.get_untracked() { 
+                    set_unlock_prog.set(0); 
+                    set_status_msg.set("HOLD INTERRUPTED.".into());
+                    return; 
+                }
                 set_unlock_prog.set(i);
                 TimeoutFuture::new(10).await;
             }
             set_unlocked.set(true);
+            set_status_msg.set("STEALTH MODE DEACTIVATED.".into());
         });
     };
 
     let start_pay = move || {
         if !unlocked.get_untracked() || !wallet_connected.get_untracked() { return; }
         set_holding_pay.set(true);
+        set_status_msg.set("ATTESTING HUMAN INTENT...".into());
         spawn_local(async move {
             for i in 1..=100 {
-                if !holding_pay.get_untracked() { set_pay_prog.set(0); return; }
+                if !holding_pay.get_untracked() { 
+                    set_pay_prog.set(0); 
+                    set_status_msg.set("AUTHORIZATION FAILED: HOLD ABORTED.".into());
+                    return; 
+                }
                 set_pay_prog.set(i);
                 TimeoutFuture::new(15).await;
             }
@@ -143,12 +157,13 @@ pub fn App() -> impl IntoView {
                 wallet_linked: true,
                 hold_duration_ms: 1500,
                 timestamp: js_sys::Date::now(),
-                entropy_hash: format!("VEXT-SEC-{}", js_sys::Math::random()),
+                entropy_hash: format!("VEXT-HEX-{}", js_sys::Math::random()),
             };
 
             set_attestations.update(|list| list.push(new_auth));
             set_paid.set(true);
             set_pay_prog.set(0);
+            set_status_msg.set("TRIPLE-LOCK ATTESTATION SUCCESSFUL.".into());
         });
     };
 
@@ -185,7 +200,7 @@ pub fn App() -> impl IntoView {
                         </div>
                     </div>
 
-                    /* Session Audit Log: Permanent proof for the session */
+                    /* Session Audit Log */
                     <div class="history-log">
                         <h3>"SESSION AUDIT LOG"</h3>
                         <div class="log-entries">
@@ -199,7 +214,7 @@ pub fn App() -> impl IntoView {
                                 }
                             }).collect_view()}
                             {move || if attestations.get().is_empty() { 
-                                view! { <p class="empty-msg">"Waiting for authorization..."</p> }.into_view() 
+                                view! { <p class="empty-msg">"Waiting for intent authorization..."</p> }.into_view() 
                             } else { 
                                 view! { <div></div> }.into_view() 
                             }}
@@ -207,8 +222,12 @@ pub fn App() -> impl IntoView {
                     </div>
                 </main>
 
+                /* STATUS MONITOR: The visual feedback for all system events */
+                <div class="status-monitor" style="font-size: 10px; color: #3b82f6; text-align: center; margin: 15px 0; font-family: monospace; letter-spacing: 0.05em; text-transform: uppercase;">
+                    {move || status_msg.get()}
+                </div>
+
                 <footer class="controls">
-                    /* The 1-2-3 Step System */
                     <div class="step-indicator">
                         <div class="step" class:done={move || wallet_connected.get()}>"1"</div>
                         <div class="step" class:done={move || biometric_verified.get()}>"2"</div>
@@ -219,7 +238,7 @@ pub fn App() -> impl IntoView {
                         {move || if !wallet_connected.get() {
                             view! {
                                 <button class="action-btn primary" on:click={move |_| {
-                                    try_connect_wallet(set_wallet_connected, set_wallet_key);
+                                    try_connect_wallet(set_wallet_connected, set_wallet_key, set_status_msg);
                                 }}>
                                     "LINK WALLET"
                                 </button>
@@ -263,14 +282,13 @@ pub fn App() -> impl IntoView {
                     </div>
                 </footer>
 
-                /* The Jagged Receipt: Safe Option rendering to prevent panics */
                 {move || {
                     if let Some(last) = attestations.get().last().cloned() {
                         if paid.get() {
                             return view! {
                                 <div class="receipt-overlay">
                                     <div class="jagged-receipt">
-                                        <h3>"INTENT ATTESTED"</h3>
+                                        <h3>"INTENT SIGNED"</h3>
                                         <div class="receipt-row"><span>"Asset"</span><span>{last.asset}</span></div>
                                         <div class="receipt-row"><span>"Security"</span><span>"BIO-VERIFIED"</span></div>
                                         <div class="receipt-row"><span>"Identity"</span><span>"VALIDATED"</span></div>
@@ -288,18 +306,19 @@ pub fn App() -> impl IntoView {
     }
 }
 
-/* ===================== WALLET HELPERS ===================== */
-
+// Wallet helper with status reporting
 fn try_connect_wallet(
     set_connected: WriteSignal<bool>,
     set_key: WriteSignal<String>,
+    set_status: WriteSignal<String>,
 ) {
     spawn_local(async move {
         if SOLANA.is_undefined() {
-            web_sys::console::error_1(&"VEXT System Error: window.solana not found.".into());
+            set_status.set("ERROR: SOLANA INJECTION NOT FOUND. INSTALL PHANTOM.".into());
             return;
         }
 
+        set_status.set("HANDSHAKING WITH WALLET...".into());
         let connect_fn = Reflect::get(&SOLANA, &"connect".into()).unwrap();
         let promise = js_sys::Function::from(connect_fn)
             .call0(&SOLANA)
@@ -312,6 +331,9 @@ fn try_connect_wallet(
 
             set_key.set(result.as_string().unwrap_or_default());
             set_connected.set(true);
+            set_status.set("VECTOR 1 SECURED. SCAN BIOMATRIX.".into());
+        } else {
+            set_status.set("WALLET CONNECTION REJECTED.".into());
         }
     });
 }
