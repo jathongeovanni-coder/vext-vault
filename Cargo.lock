@@ -1638,6 +1638,8 @@ dependencies = [
  "gloo-timers",
  "js-sys",
  "leptos",
+ "leptos_config",
+ "leptos_dom",
  "serde",
  "serde_json",
  "sha2",

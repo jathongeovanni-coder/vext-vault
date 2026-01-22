@@ -3,11 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="VEXT Vault - Human Intent Attestation Infrastructure">
-    <title>VEXT VAULT</title>
-    <link data-trunk rel="css" href="style.css">
+    <title>VEXT Vault | Secure Intent Bridge</title>
+    
+    <!-- Trunk will automatically find and process this CSS file -->
+    <link data-trunk rel="css" href="style.css" />
+    
+    <style>
+        /* This CSS is inline to prevent a white flicker during WASM loading */
+        body { 
+            background-color: #020617; 
+            margin: 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #vext-root:empty {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #3b82f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        #vext-root:empty::after { 
+            content: "INITIALIZING INSTITUTIONAL BRIDGE..."; 
+            animation: pulse 1.5s infinite ease-in-out;
+            font-size: 14px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.98); }
+        }
+    </style>
 </head>
 <body>
+    <!-- The Rust/Leptos App mounts to this specific ID -->
     <div id="vext-root"></div>
 </body>
 </html>
