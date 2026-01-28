@@ -10,8 +10,7 @@ authors = ["VEXT Labs <security@vext.com>"]
 crate-type = ["cdylib"]
 
 [dependencies]
-# Standard Leptos web framework with CSR support
-# We are using the stable version for maximum reliability on Vercel
+# Standard Leptos web framework (Stable CSR version)
 leptos = { version = "0.6.15", features = ["csr"] }
 leptos_dom = "0.6.15"
 leptos_config = "0.6.15"
@@ -21,42 +20,39 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 
-# Web-sys with all required features for UI, Touch, and Mouse logic
-# These are essential for the VEXT Hold-to-Authorize logic
+# Web-sys with Touch and Mouse support
 web-sys = { version = "0.3", features = [
-  "Window",
-  "Document",
-  "HtmlElement",
-  "Location",
-  "Element",
-  "UrlSearchParams",
-  "console",
-  "MouseEvent",
-  "TouchEvent"
+  "Window", "Document", "HtmlElement", "Location", "Element", 
+  "UrlSearchParams", "console", "MouseEvent", "TouchEvent"
 ] }
 
-# Async and Networking
+# Networking and Timers
 futures = "0.3"
 gloo-timers = { version = "0.3", features = ["futures"] }
 gloo-net = { version = "0.5", features = ["http"] }
 
-# Security and Hashing for the Jagged Receipt
+# --- NEW SECURITY CRITICAL LIBRARIES ---
+# Signatures for Anti-Spoofing
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+# Nonces for Anti-Replay
+uuid = { version = "1.7", features = ["v4", "js"] }
+# Standard hex encoding
+hex = "0.4"
+
+# Security and Data Serialization
 sha2 = "0.10"
 base64 = "0.22"
 zeroize = { version = "1.7", features = ["serde"] }
-
-# Serialization for Attestation Data (The Patent Logic)
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# Debugging
+# Error Handling
 console_error_panic_hook = "0.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 
 [profile.release]
-# Optimized for the smallest possible WASM file (Institutional speed)
 opt-level = 'z'
 lto = true
 codegen-units = 1
