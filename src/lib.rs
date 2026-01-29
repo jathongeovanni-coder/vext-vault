@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use js_sys::{Reflect, Promise};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use web_sys::HtmlElement;
 use wasm_bindgen::JsCast;
 use uuid::Uuid;
@@ -13,24 +14,25 @@ use ed25519_dalek::{SigningKey, Signer};
 
 /* ===================== HARDENED ATTESTATION DATA ===================== */
 
+/// The data object representing a verified human intent.
+/// This matches the schema expected by the Institutional Verifier.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IntentAttestation {
-    pub asset: String,
-    pub price_at_auth: String,
+    pub asset_symbol: String,    // Re-added to resolve "dead code" warning
     pub wallet_pubkey: String,
     pub biometric_proof: String, 
     pub hold_duration_ms: u64,    
-    pub timestamp_utc: u64,
-    pub nonce: String,           // Anti-Replay Nonce
     pub entropy_hash: String,     
-    pub signature: String,       // Cryptographic Seal
+    pub nonce: String,           // Unique ID to prevent Replay Attacks
+    pub timestamp_utc: u64,      // Unix Epoch for TTL validation
+    pub signature: String,       // Ed25519 Cryptographic Seal
 }
 
 /* ===================== WALLET BINDINGS ===================== */
 
 #[wasm_bindgen]
 extern "C" {
-    // Accessing window.solana via a function avoids the deprecated static warning
+    /// Modern approach to access window.solana without deprecation warnings.
     #[wasm_bindgen(js_namespace = window, js_name = solana)]
     fn get_solana() -> JsValue;
 }
@@ -57,6 +59,7 @@ struct CoinbaseData { amount: String }
 
 #[component]
 pub fn App() -> impl IntoView {
+    // --- STATE SIGNALS ---
     let (wallet_connected, set_wallet_connected) = create_signal(false);
     let (wallet_key, set_wallet_key) = create_signal(String::new());
     let (biometric_verified, set_biometric_verified) = create_signal(false);
@@ -75,7 +78,8 @@ pub fn App() -> impl IntoView {
     let (sol, set_sol) = create_signal("—".into());
     let (asset, set_asset) = create_signal(Asset::SOL);
 
-    let fetch_prices = move || {
+    // --- EFFECT: PRICE ORACLE ---
+    create_effect(move |_| {
         let assets = [("BTC", set_btc), ("ETH", set_eth), ("SOL", set_sol)];
         for (sym, setter) in assets {
             spawn_local(async move {
@@ -87,10 +91,9 @@ pub fn App() -> impl IntoView {
                 }
             });
         }
-    };
+    });
 
-    create_effect(move |_| { fetch_prices(); });
-
+    // --- HANDLER: VECTOR 2 (IDENTITY) ---
     let verify_bio = move |_| {
         set_verifying_bio.set(true);
         set_status_msg.set("SCANNING BIOMATRIX...".into());
@@ -102,6 +105,7 @@ pub fn App() -> impl IntoView {
         });
     };
 
+    // --- HANDLER: STEALTH UNLOCK ---
     let start_unlock = move || {
         if !biometric_verified.get_untracked() { return; }
         set_holding_unlock.set(true);
@@ -121,6 +125,7 @@ pub fn App() -> impl IntoView {
         });
     };
 
+    // --- HANDLER: VECTOR 3 (INTENT ATTESTATION) ---
     let start_pay = move || {
         if !unlocked.get_untracked() || !wallet_connected.get_untracked() { return; }
         set_holding_pay.set(true);
@@ -130,48 +135,52 @@ pub fn App() -> impl IntoView {
             for i in 1..=100 {
                 if !holding_pay.get_untracked() { 
                     set_pay_prog.set(0); 
-                    set_status_msg.set("AUTHORIZATION FAILED: HOLD ABORTED.".into());
+                    set_status_msg.set("AUTHORIZATION FAILED.".into());
                     return; 
                 }
                 set_pay_prog.set(i);
                 TimeoutFuture::new(15).await;
             }
             
-            // --- NEW: INSTITUTIONAL SIGNING ENGINE ---
+            // --- CANONICAL SIGNING ENGINE ---
             let signing_key = SigningKey::from_bytes(&[0u8; 32]); 
             let nonce = Uuid::new_v4().to_string();
             let timestamp = (js_sys::Date::now() / 1000.0) as u64;
-            let current_price = match asset.get() {
-                Asset::BTC => btc.get(),
-                Asset::ETH => eth.get(),
-                Asset::SOL => sol.get(),
-            };
+            let entropy = format!("VEXT-HEX-{}", js_sys::Math::random());
+            let current_asset_sym = asset.get().symbol();
 
-            let message = format!("{}{}{}{}{}{}", 
-                nonce, timestamp, wallet_key.get_untracked(), 
-                1500, "VEXT-ORIGIN", "BIO-ATTESTED"
-            );
-            let signature = signing_key.sign(message.as_bytes());
+            // Create Canonical JSON message for signing
+            let message_json = json!({
+                "asset": current_asset_sym,
+                "nonce": nonce,
+                "timestamp_utc": timestamp,
+                "wallet_pubkey": wallet_key.get_untracked(),
+                "hold_duration_ms": 1500,
+                "entropy_hash": entropy,
+            });
+            let message_str = message_json.to_string();
+            let signature = signing_key.sign(message_str.as_bytes());
 
+            // 3. Assemble final attestation
             let new_auth = IntentAttestation {
-                asset: asset.get().symbol().to_string(),
-                price_at_auth: current_price,
+                asset_symbol: current_asset_sym.to_string(),
                 wallet_pubkey: wallet_key.get_untracked(),
                 biometric_proof: "BIO-ATTESTED".to_string(),
                 hold_duration_ms: 1500,
                 timestamp_utc: timestamp,
                 nonce,
-                entropy_hash: format!("VEXT-HEX-{}", js_sys::Math::random()),
+                entropy_hash: entropy,
                 signature: hex::encode(signature.to_bytes()),
             };
 
             set_attestations.update(|list| list.push(new_auth));
             set_paid.set(true);
             set_pay_prog.set(0);
-            set_status_msg.set("TRIPLE-LOCK ATTESTATION SIGNED & SEALED.".into());
+            set_status_msg.set("ATTESTATION SIGNED & CANONICALIZED.".into());
         });
     };
 
+    // --- VIEW ---
     view! {
         <div class="container">
             <div class="vault-card">
@@ -208,11 +217,11 @@ pub fn App() -> impl IntoView {
                         <h3>"SESSION AUDIT LOG"</h3>
                         <div class="log-entries">
                             {move || attestations.get().into_iter().rev().map(|a| {
-                                // Fix: Convert string slices to owned Strings to satisfy 'static requirement
                                 let sig_short = a.signature.get(0..8).map(|s| s.to_string()).unwrap_or_default();
+                                let sym = a.asset_symbol;
                                 view! {
                                     <div class="log-entry">
-                                        <span>{a.asset}</span>
+                                        <span>{sym}</span>
                                         <span class="log-hash">{sig_short}</span>
                                         <span>"✓"</span>
                                     </div>
@@ -280,7 +289,6 @@ pub fn App() -> impl IntoView {
                 {move || {
                     if let Some(last) = attestations.get().last().cloned() {
                         if paid.get() {
-                            // Fix: Convert slices to owned Strings for the receipt display
                             let sig_display = format!("{}...", last.signature.get(0..16).unwrap_or(""));
                             let nonce_display = last.nonce.get(0..8).unwrap_or("").to_string();
                             
@@ -288,9 +296,10 @@ pub fn App() -> impl IntoView {
                                 <div class="receipt-overlay">
                                     <div class="jagged-receipt">
                                         <h3>"INTENT SIGNED"</h3>
+                                        <div class="receipt-row"><span>"ASSET"</span><span>{last.asset_symbol}</span></div>
                                         <div class="receipt-row"><span>"SIG"</span><span style="font-size:8px">{sig_display}</span></div>
                                         <div class="receipt-row"><span>"NONCE"</span><span style="font-size:8px">{nonce_display}</span></div>
-                                        <div class="receipt-tag">"VEXT CRYPTOGRAPHIC SEAL"</div>
+                                        <div class="receipt-tag">"CANONICAL VEXT SEAL"</div>
                                         <button class="dismiss-btn" on:click={move |_| set_paid.set(false)}>"DONE"</button>
                                     </div>
                                 </div>
@@ -304,6 +313,7 @@ pub fn App() -> impl IntoView {
     }
 }
 
+// --- HELPER: WALLET LOGIC ---
 fn try_connect_wallet(
     set_connected: WriteSignal<bool>,
     set_key: WriteSignal<String>,
