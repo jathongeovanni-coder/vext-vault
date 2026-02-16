@@ -4,36 +4,36 @@ set -e
 
 echo "--- VEXT Vault: Starting Institutional Build ---"
 
-# --- FIX VERCEL HOME DIRECTORY ERROR ---
-# Vercel's environment sometimes has a mismatch between $HOME and the user ID.
-# These exports tell the Rust installer exactly where to go and to skip the check.
-export HOME=/root
-export RUSTUP_INIT_SKIP_PATH_CHECK=yes
-export CARGO_HOME=/root/.cargo
-export RUSTUP_HOME=/root/.rustup
+# --- FIX VERCEL PERMISSIONS & PATHS ---
+# We use the current directory for cargo/rustup to avoid permission issues in /root
+export CARGO_HOME="$core/.cargo"
+export RUSTUP_HOME="$core/.rustup"
 export PATH="$CARGO_HOME/bin:$PATH"
 
-# 1. Install Rustup & WASM Target
+# 1. Install/Configure Rust
 if ! command -v rustup >/dev/null 2>&1; then
     echo "Installing Rust toolchain..."
-    # We use -y and --default-toolchain to make it non-interactive
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
-    # Source the environment so 'cargo' works immediately
     source "$CARGO_HOME/env"
+else
+    echo "Rustup found. Ensuring stable toolchain is default..."
+    rustup default stable
 fi
 
 echo "Adding WASM target..."
 rustup target add wasm32-unknown-unknown
 
-# 2. Install Trunk
+# 2. Install Trunk build tool
 if ! command -v trunk >/dev/null 2>&1; then
-    echo "Installing Trunk (this may take a few minutes)..."
+    echo "Installing Trunk..."
+    # Using --locked ensures we get a version compatible with our lockfile
     cargo install trunk --locked
 fi
 
-# 3. The Build
-echo "Executing Trunk Build..."
+# 3. Execute Build
+echo "Building VEXT Vault WASM Bundle..."
+# We ensure trunk knows where the distribution folder is
 trunk build --release --dist dist --public-url /
 
-echo "--- Build Successful: VEXT Vault is ready for deployment ---"
+echo "--- Build Successful ---"
 ls -lah dist

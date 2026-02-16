@@ -10,29 +10,36 @@ use serde_json::json;
 use web_sys::HtmlElement;
 use wasm_bindgen::JsCast;
 use uuid::Uuid;
-use ed25519_dalek::{SigningKey, Signer};
+
+/* ===================== JS HARDWARE BRIDGE ===================== */
+
+#[wasm_bindgen(module = "/webauthn_bridge.js")]
+extern "C" {
+    /// Calls the browser's Secure Enclave to sign the intent challenge.
+    #[wasm_bindgen(catch)]
+    async fn signWithHardware(challengeHex: String, walletAddress: String) -> Result<JsValue, JsValue>;
+}
 
 /* ===================== HARDENED ATTESTATION DATA ===================== */
 
 /// The data object representing a verified human intent.
-/// This matches the schema expected by the Institutional Verifier.
+/// Updated to include hardware-bound verification fields.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IntentAttestation {
-    pub asset_symbol: String,    // Re-added to resolve "dead code" warning
+    pub asset_symbol: String,
     pub wallet_pubkey: String,
     pub biometric_proof: String, 
     pub hold_duration_ms: u64,    
     pub entropy_hash: String,     
-    pub nonce: String,           // Unique ID to prevent Replay Attacks
+    pub nonce: String,           // Unique ID for Replay Protection
     pub timestamp_utc: u64,      // Unix Epoch for TTL validation
-    pub signature: String,       // Ed25519 Cryptographic Seal
+    pub signature: String,       // Hardware-generated signature
 }
 
 /* ===================== WALLET BINDINGS ===================== */
 
 #[wasm_bindgen]
 extern "C" {
-    /// Modern approach to access window.solana without deprecation warnings.
     #[wasm_bindgen(js_namespace = window, js_name = solana)]
     fn get_solana() -> JsValue;
 }
@@ -125,7 +132,7 @@ pub fn App() -> impl IntoView {
         });
     };
 
-    // --- HANDLER: VECTOR 3 (INTENT ATTESTATION) ---
+    // --- HANDLER: VECTOR 3 (HARDWARE-BOUND ATTESTATION) ---
     let start_pay = move || {
         if !unlocked.get_untracked() || !wallet_connected.get_untracked() { return; }
         set_holding_pay.set(true);
@@ -142,45 +149,58 @@ pub fn App() -> impl IntoView {
                 TimeoutFuture::new(15).await;
             }
             
-            // --- CANONICAL SIGNING ENGINE ---
-            let signing_key = SigningKey::from_bytes(&[0u8; 32]); 
+            // --- 1. PREPARE CANONICAL CHALLENGE ---
             let nonce = Uuid::new_v4().to_string();
             let timestamp = (js_sys::Date::now() / 1000.0) as u64;
             let entropy = format!("VEXT-HEX-{}", js_sys::Math::random());
             let current_asset_sym = asset.get().symbol();
+            let wallet_pk = wallet_key.get_untracked();
 
-            // Create Canonical JSON message for signing
             let message_json = json!({
                 "asset": current_asset_sym,
                 "nonce": nonce,
                 "timestamp_utc": timestamp,
-                "wallet_pubkey": wallet_key.get_untracked(),
+                "wallet_pubkey": wallet_pk,
                 "hold_duration_ms": 1500,
                 "entropy_hash": entropy,
             });
+            
+            // Convert message to Base64 to pass as a hardware challenge
             let message_str = message_json.to_string();
-            let signature = signing_key.sign(message_str.as_bytes());
+            let challenge_b64 = b64_encode(message_str.as_bytes());
 
-            // 3. Assemble final attestation
-            let new_auth = IntentAttestation {
-                asset_symbol: current_asset_sym.to_string(),
-                wallet_pubkey: wallet_key.get_untracked(),
-                biometric_proof: "BIO-ATTESTED".to_string(),
-                hold_duration_ms: 1500,
-                timestamp_utc: timestamp,
-                nonce,
-                entropy_hash: entropy,
-                signature: hex::encode(signature.to_bytes()),
-            };
+            set_status_msg.set("CONTACTING SECURE ENCLAVE...".into());
 
-            set_attestations.update(|list| list.push(new_auth));
-            set_paid.set(true);
-            set_pay_prog.set(0);
-            set_status_msg.set("ATTESTATION SIGNED & CANONICALIZED.".into());
+            // --- 2. CALL HARDWARE BRIDGE (WebAuthn) ---
+            match signWithHardware(challenge_b64, wallet_pk.clone()).await {
+                Ok(js_val) if !js_val.is_null() => {
+                    let signature = Reflect::get(&js_val, &"signature".into()).unwrap().as_string().unwrap_or_default();
+                    
+                    let new_auth = IntentAttestation {
+                        asset_symbol: current_asset_sym.to_string(),
+                        wallet_pubkey: wallet_pk,
+                        biometric_proof: "HARDWARE-VERIFIED".to_string(),
+                        hold_duration_ms: 1500,
+                        timestamp_utc: timestamp,
+                        nonce,
+                        entropy_hash: entropy,
+                        signature,
+                    };
+
+                    set_attestations.update(|list| list.push(new_auth));
+                    set_paid.set(true);
+                    set_pay_prog.set(0);
+                    set_status_msg.set("HARDWARE ATTESTATION SEALED.".into());
+                }
+                _ => {
+                    set_holding_pay.set(false);
+                    set_pay_prog.set(0);
+                    set_status_msg.set("HARDWARE ERROR: USER CANCELLED OR TIMEOUT.".into());
+                }
+            }
         });
     };
 
-    // --- VIEW ---
     view! {
         <div class="container">
             <div class="vault-card">
@@ -299,7 +319,7 @@ pub fn App() -> impl IntoView {
                                         <div class="receipt-row"><span>"ASSET"</span><span>{last.asset_symbol}</span></div>
                                         <div class="receipt-row"><span>"SIG"</span><span style="font-size:8px">{sig_display}</span></div>
                                         <div class="receipt-row"><span>"NONCE"</span><span style="font-size:8px">{nonce_display}</span></div>
-                                        <div class="receipt-tag">"CANONICAL VEXT SEAL"</div>
+                                        <div class="receipt-tag">"HARDWARE VEXT SEAL"</div>
                                         <button class="dismiss-btn" on:click={move |_| set_paid.set(false)}>"DONE"</button>
                                     </div>
                                 </div>
@@ -313,7 +333,13 @@ pub fn App() -> impl IntoView {
     }
 }
 
-// --- HELPER: WALLET LOGIC ---
+// --- HELPERS ---
+
+fn b64_encode(input: &[u8]) -> String {
+    use base64::{Engine as _, engine::general_purpose};
+    general_purpose::STANDARD.encode(input)
+}
+
 fn try_connect_wallet(
     set_connected: WriteSignal<bool>,
     set_key: WriteSignal<String>,
