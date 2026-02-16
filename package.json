@@ -1,0 +1,19 @@
+{
+  "name": "vext_final",
+  "version": "1.0.0",
+  "description": "VEXT Vault - Institutional Hardware Attestation",
+  "main": "webauthn_bridge.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jathongeovanni-coder/vext-vault.git"
+  },
+  "author": "VEXT Labs",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
