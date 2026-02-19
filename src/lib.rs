@@ -40,7 +40,7 @@ pub fn App() -> impl IntoView {
     let (wallet_connected, set_wallet_connected) = create_signal(false);
     let (wallet_key, set_wallet_key) = create_signal(String::new());
     let (biometric_verified, set_biometric_verified) = create_signal(false);
-    let (verifying_bio, set_verifying_bio) = create_signal(false);
+    let (_verifying_bio, set_verifying_bio) = create_signal(false); // Fixed unused warning
     let (unlocked, set_unlocked) = create_signal(false);
     let (paid, set_paid) = create_signal(false);
     let (status_msg, set_status_msg) = create_signal("SYSTEM READY. WAITING FOR VECTOR 1.".to_string());
@@ -244,12 +244,16 @@ pub fn App() -> impl IntoView {
 
                 {move || if paid.get() {
                     let last = attestations.get().last().cloned().unwrap();
+                    // Fix: Convert slices to owned Strings to satisfy 'static requirement in view!
+                    let sig_label = if last.signature.len() > 16 { last.signature[0..16].to_string() } else { last.signature.clone() };
+                    let nonce_label = if last.nonce.len() > 8 { last.nonce[0..8].to_string() } else { last.nonce.clone() };
+                    
                     view! {
                         <div class="receipt-overlay">
                             <div class="jagged-receipt">
                                 <h3>"INTENT SIGNED"</h3>
-                                <div class="receipt-row"><span>"SIG"</span><span style="font-size:8px">{if last.signature.len() > 16 { &last.signature[0..16] } else { "---" }}...</span></div>
-                                <div class="receipt-row"><span>"NONCE"</span><span style="font-size:8px">{&last.nonce[0..8]}</span></div>
+                                <div class="receipt-row"><span>"SIG"</span><span style="font-size:8px">{sig_label}"..."</span></div>
+                                <div class="receipt-row"><span>"NONCE"</span><span style="font-size:8px">{nonce_label}</span></div>
                                 <div class="receipt-tag">"STATEFUL VEXT SEAL"</div>
                                 <button class="dismiss-btn" on:click={move |_| set_paid.set(false)}>"DONE"</button>
                             </div>
