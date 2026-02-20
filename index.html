@@ -5,35 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VEXT | Institutional Intent Vault</title>
     
-    <!-- Premium UI Styling -->
+    <!-- Professional UI Styling -->
     <link rel="stylesheet" href="/style.css">
     
     <!-- 
-      CRITICAL: The Hardware Bridge must load FIRST.
-      This attaches the 'vext' object to the window so the 
-      Rust/WASM engine can find the connectWallet and 
-      signWithHardware functions immediately.
+      THE GLOBAL BRIDGE: Loads before the WASM engine.
+      Attaches window.vext for hardware/wallet handshakes.
     -->
     <script src="/webauthn_bridge.js"></script>
     
-    <!-- Trunk Metadata for Rust/WASM Compilation -->
-    <link rel="rust" data-trunk href="Cargo.toml" data-bin="vext-vault" data-type="main" />
+    <!-- 
+      FIXED TRUNK LINK:
+      Removed 'data-bin' because we are building a Library (src/lib.rs).
+      Trunk will now correctly target the cdylib output automatically.
+    -->
+    <link rel="rust" data-trunk href="Cargo.toml" />
     
-    <!-- Standard Favicon Placeholder -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
 </head>
 <body style="background: #020617; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif;">
     
-    <!-- 
-      The VEXT Mounting Point. 
-      The Leptos App in lib.rs targets this ID.
-    -->
     <div id="vext-root" style="width: 100%; display: flex; justify-content: center;"></div>
 
     <noscript>
         <div style="color: white; text-align: center; padding: 20px;">
-            <h1>JavaScript Required</h1>
-            <p>VEXT Vault requires JavaScript and WebAssembly to secure your hardware intent.</p>
+            <h1>Institutional Security Requires JavaScript</h1>
+            <p>Please enable JS to utilize the VEXT Hardware-Bound Intent Bridge.</p>
         </div>
     </noscript>
 </body>
