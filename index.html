@@ -3,49 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VEXT Vault | Secure Intent Bridge</title>
+    <title>VEXT | Institutional Intent Vault</title>
     
-    <!-- Trunk will automatically find and process this CSS file -->
-    <link data-trunk rel="css" href="style.css" />
+    <!-- Premium UI Styling -->
+    <link rel="stylesheet" href="/style.css">
     
-    <style>
-        /* This CSS is inline to prevent a white flicker during WASM loading */
-        body { 
-            background-color: #020617; 
-            margin: 0; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        #vext-root:empty {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #3b82f6;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        #vext-root:empty::after { 
-            content: "INITIALIZING INSTITUTIONAL BRIDGE..."; 
-            animation: pulse 1.5s infinite ease-in-out;
-            font-size: 14px;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.98); }
-        }
-    </style>
+    <!-- 
+      CRITICAL: The Hardware Bridge must load FIRST.
+      This attaches the 'vext' object to the window so the 
+      Rust/WASM engine can find the connectWallet and 
+      signWithHardware functions immediately.
+    -->
+    <script src="/webauthn_bridge.js"></script>
+    
+    <!-- Trunk Metadata for Rust/WASM Compilation -->
+    <link rel="rust" data-trunk href="Cargo.toml" data-bin="vext-vault" data-type="main" />
+    
+    <!-- Standard Favicon Placeholder -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
 </head>
-<body>
-    <!-- The Rust/Leptos App mounts to this specific ID -->
-    <div id="vext-root"></div>
+<body style="background: #020617; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif;">
+    
+    <!-- 
+      The VEXT Mounting Point. 
+      The Leptos App in lib.rs targets this ID.
+    -->
+    <div id="vext-root" style="width: 100%; display: flex; justify-content: center;"></div>
+
+    <noscript>
+        <div style="color: white; text-align: center; padding: 20px;">
+            <h1>JavaScript Required</h1>
+            <p>VEXT Vault requires JavaScript and WebAssembly to secure your hardware intent.</p>
+        </div>
+    </noscript>
 </body>
 </html>

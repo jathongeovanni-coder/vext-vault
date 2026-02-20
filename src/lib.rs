@@ -11,12 +11,17 @@ use web_sys::HtmlElement;
 use wasm_bindgen::JsCast;
 use uuid::Uuid;
 
-/* ===================== JS HARDWARE BRIDGE ===================== */
+/* ===================== GLOBAL JS BRIDGE BINDINGS ===================== */
 
-#[wasm_bindgen(module = "/webauthn_bridge.js")]
+#[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(catch)]
-    async fn signWithHardware(challengeHex: String, walletAddress: String) -> Result<JsValue, JsValue>;
+    // Calling window.vext.connectWallet
+    #[wasm_bindgen(js_namespace = ["vext"], catch)]
+    async fn connectWallet() -> Result<JsValue, JsValue>;
+
+    // Calling window.vext.signWithHardware
+    #[wasm_bindgen(js_namespace = ["vext"], catch)]
+    async fn signWithHardware(challengeHex: String) -> Result<JsValue, JsValue>;
 }
 
 /* ===================== ATTESTATION DATA ===================== */
@@ -40,7 +45,7 @@ pub fn App() -> impl IntoView {
     let (wallet_connected, set_wallet_connected) = create_signal(false);
     let (wallet_key, set_wallet_key) = create_signal(String::new());
     let (biometric_verified, set_biometric_verified) = create_signal(false);
-    let (_verifying_bio, set_verifying_bio) = create_signal(false); // Fixed unused warning
+    let (_verifying_bio, set_verifying_bio) = create_signal(false);
     let (unlocked, set_unlocked) = create_signal(false);
     let (paid, set_paid) = create_signal(false);
     let (status_msg, set_status_msg) = create_signal("SYSTEM READY. WAITING FOR VECTOR 1.".to_string());
@@ -55,7 +60,7 @@ pub fn App() -> impl IntoView {
     let (sol, set_sol) = create_signal("—".into());
     let (asset, set_asset) = create_signal(Asset::SOL);
 
-    // --- EFFECT: PRICE ORACLE ---
+    // Effect to fetch prices from Coinbase
     create_effect(move |_| {
         let assets = [("BTC", set_btc), ("ETH", set_eth), ("SOL", set_sol)];
         for (sym, setter) in assets {
@@ -69,6 +74,30 @@ pub fn App() -> impl IntoView {
             });
         }
     });
+
+    // Updated Link Wallet logic using the Global Bridge
+    let link_wallet = move |_| {
+        set_status_msg.set("COMMUNICATING WITH GLOBAL BRIDGE...".into());
+        spawn_local(async move {
+            match connectWallet().await {
+                Ok(res) => {
+                    let addr = res.as_string().unwrap_or_default();
+                    if addr == "ERROR_NO_WALLET" {
+                        set_status_msg.set("ERROR: PHANTOM NOT INSTALLED.".into());
+                    } else if addr == "ERROR_REJECTED" {
+                        set_status_msg.set("CONNECTION REJECTED BY USER.".into());
+                    } else if !addr.is_empty() {
+                        set_wallet_key.set(addr);
+                        set_wallet_connected.set(true);
+                        set_status_msg.set("VECTOR 1 SECURED. READY FOR IDENTITY SCAN.".into());
+                    }
+                }
+                Err(_) => {
+                    set_status_msg.set("ERROR: BRIDGE NOT INITIALIZED.".into());
+                }
+            }
+        });
+    };
 
     let verify_bio = move |_| {
         set_verifying_bio.set(true);
@@ -114,7 +143,6 @@ pub fn App() -> impl IntoView {
                 TimeoutFuture::new(15).await;
             }
             
-            // --- HARDWARE CHALLENGE ---
             let nonce = Uuid::new_v4().to_string();
             let timestamp = (js_sys::Date::now() / 1000.0) as u64;
             let current_asset = asset.get().symbol();
@@ -128,12 +156,10 @@ pub fn App() -> impl IntoView {
             });
             let challenge_b64 = b64_encode(message_json.to_string().as_bytes());
 
-            // --- SIGN WITH HARDWARE ---
-            match signWithHardware(challenge_b64, wallet_pk.clone()).await {
+            match signWithHardware(challenge_b64).await {
                 Ok(js_val) if !js_val.is_null() => {
                     let sig = Reflect::get(&js_val, &"signature".into()).unwrap_or(JsValue::NULL).as_string().unwrap_or_default();
                     
-                    // --- VERIFY WITH BACKEND ---
                     set_status_msg.set("COMMITTING TO STATEFUL MEMORY...".into());
                     let verifier_req = Request::post("/api/verify")
                         .json(&json!({ "nonce": nonce, "timestamp": timestamp }))
@@ -218,7 +244,7 @@ pub fn App() -> impl IntoView {
                     <div class="button-stack">
                         {move || {
                             if !wallet_connected.get() {
-                                view! { <button class="action-btn primary" on:click={move |_| try_connect_wallet(set_wallet_connected, set_wallet_key, set_status_msg)}>"LINK WALLET"</button> }.into_view()
+                                view! { <button class="action-btn primary" on:click=link_wallet>"LINK WALLET"</button> }.into_view()
                             } else if !biometric_verified.get() {
                                 view! { <button class="action-btn primary" on:click=verify_bio>"SCAN BIOMATRIX"</button> }.into_view()
                             } else if !unlocked.get() {
@@ -244,7 +270,6 @@ pub fn App() -> impl IntoView {
 
                 {move || if paid.get() {
                     let last = attestations.get().last().cloned().unwrap();
-                    // Fix: Convert slices to owned Strings to satisfy 'static requirement in view!
                     let sig_label = if last.signature.len() > 16 { last.signature[0..16].to_string() } else { last.signature.clone() };
                     let nonce_label = if last.nonce.len() > 8 { last.nonce[0..8].to_string() } else { last.nonce.clone() };
                     
@@ -269,45 +294,6 @@ pub fn App() -> impl IntoView {
 fn b64_encode(input: &[u8]) -> String {
     use base64::{Engine as _, engine::general_purpose};
     general_purpose::STANDARD.encode(input)
-}
-
-fn try_connect_wallet(set_conn: WriteSignal<bool>, set_key: WriteSignal<String>, set_stat: WriteSignal<String>) {
-    spawn_local(async move {
-        let solana = get_solana();
-        if solana.is_undefined() { 
-            set_stat.set("ERROR: WALLET EXTENSION NOT DETECTED.".into()); 
-            return; 
-        }
-        
-        set_stat.set("HANDSHAKING WITH PHANTOM...".into());
-        
-        let connect_fn = Reflect::get(&solana, &"connect".into());
-        if let Ok(func) = connect_fn {
-            let promise = js_sys::Function::from(func).call0(&solana);
-            if let Ok(p) = promise {
-                match JsFuture::from(Promise::from(p)).await {
-                    Ok(res) => {
-                        let pk = Reflect::get(&res, &"publicKey".into()).unwrap();
-                        let result = js_sys::Function::from(Reflect::get(&pk, &"toString".into()).unwrap()).call0(&pk).unwrap();
-                        set_key.set(result.as_string().unwrap());
-                        set_conn.set(true);
-                        set_stat.set("VECTOR 1 SECURED. READY FOR IDENTITY SCAN.".into());
-                    }
-                    Err(_) => {
-                        set_stat.set("CONNECTION REJECTED BY USER.".into());
-                    }
-                }
-            }
-        } else {
-            set_stat.set("ERROR: WALLET API NOT FOUND.".into());
-        }
-    });
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = solana)]
-    fn get_solana() -> JsValue;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)] enum Asset { BTC, ETH, SOL }
