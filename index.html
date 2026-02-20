@@ -6,19 +6,17 @@
     <title>VEXT | Institutional Intent Vault</title>
     
     <!-- Professional UI Styling -->
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
     
     <!-- 
-      THE GLOBAL BRIDGE: Loads before the WASM engine.
-      Attaches window.vext for hardware/wallet handshakes.
+      FIXED: We removed 'data-trunk' from the script tag and removed the leading slash.
+      We will let Trunk copy this as a static asset from the /public folder.
+      This ensures the filename stays exactly 'webauthn_bridge.js' so the 
+      Rust engine can find it predictably.
     -->
-    <script src="/webauthn_bridge.js"></script>
+    <script src="webauthn_bridge.js"></script>
     
-    <!-- 
-      FIXED TRUNK LINK:
-      Removed 'data-bin' because we are building a Library (src/lib.rs).
-      Trunk will now correctly target the cdylib output automatically.
-    -->
+    <!-- Standard Trunk link for the Rust logic -->
     <link rel="rust" data-trunk href="Cargo.toml" />
     
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
