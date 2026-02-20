@@ -15,11 +15,10 @@ use uuid::Uuid;
 
 #[wasm_bindgen]
 extern "C" {
-    // Calling window.vext.connectWallet
+    // These bind to the window.vext object defined in webauthn_bridge.js
     #[wasm_bindgen(js_namespace = ["vext"], catch)]
     async fn connectWallet() -> Result<JsValue, JsValue>;
 
-    // Calling window.vext.signWithHardware
     #[wasm_bindgen(js_namespace = ["vext"], catch)]
     async fn signWithHardware(challengeHex: String) -> Result<JsValue, JsValue>;
 }
@@ -60,7 +59,7 @@ pub fn App() -> impl IntoView {
     let (sol, set_sol) = create_signal("—".into());
     let (asset, set_asset) = create_signal(Asset::SOL);
 
-    // Effect to fetch prices from Coinbase
+    // Fetch prices from Coinbase
     create_effect(move |_| {
         let assets = [("BTC", set_btc), ("ETH", set_eth), ("SOL", set_sol)];
         for (sym, setter) in assets {
@@ -75,7 +74,7 @@ pub fn App() -> impl IntoView {
         }
     });
 
-    // Updated Link Wallet logic using the Global Bridge
+    // Linking wallet via Global JS Bridge
     let link_wallet = move |_| {
         set_status_msg.set("COMMUNICATING WITH GLOBAL BRIDGE...".into());
         spawn_local(async move {
@@ -285,6 +284,20 @@ pub fn App() -> impl IntoView {
                         </div>
                     }.into_view()
                 } else { view! { <div class="hidden"></div> }.into_view() }}
+            </div>
+            
+            // Fixed SVG attribute braces for Leptos compatibility
+            <div class="nav-icon" style="position:fixed; bottom:20px; right:20px; cursor:pointer;">
+                <svg 
+                    width="30" 
+                    height="30" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke={move || if unlocked.get() { "#3b82f6" } else { "#64748b" }} 
+                    stroke-width="2"
+                >
+                    <path d="M12 15V17M12 7V13M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </div>
         </div>
     }
