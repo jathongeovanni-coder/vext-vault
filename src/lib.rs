@@ -3,8 +3,8 @@ use leptos::CollectView;
 use gloo_net::http::Request;
 use gloo_timers::future::TimeoutFuture;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::spawn_local; // Kept spawn_local for async tasks
-use js_sys::Reflect; // Removed unused Promise to clear warnings
+use wasm_bindgen_futures::spawn_local;
+use js_sys::Reflect;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use web_sys::HtmlElement;
@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 #[wasm_bindgen]
 extern "C" {
-    // These bind directly to the window.vext object defined in webauthn_bridge.js
+    // We use 'catch' to prevent JS errors from crashing the entire Rust app
     #[wasm_bindgen(js_namespace = ["vext"], catch)]
     async fn connectWallet() -> Result<JsValue, JsValue>;
 
@@ -74,15 +74,24 @@ pub fn App() -> impl IntoView {
         }
     });
 
-    // Link Wallet logic using the Global Bridge
+    // Hardened Link Wallet logic
     let link_wallet = move |_| {
-        set_status_msg.set("COMMUNICATING WITH GLOBAL BRIDGE...".into());
+        set_status_msg.set("INITIATING HARDWARE HANDSHAKE...".into());
         spawn_local(async move {
+            // Safety Check: Verify the JS bridge is actually there
+            let window = web_sys::window().unwrap();
+            let vext = Reflect::get(&window, &"vext".into()).unwrap_or(JsValue::UNDEFINED);
+            
+            if vext.is_undefined() {
+                set_status_msg.set("ERROR: BRIDGE NOT LOADED. REFRESHING...".into());
+                return;
+            }
+
             match connectWallet().await {
                 Ok(res) => {
                     let addr = res.as_string().unwrap_or_default();
                     if addr == "ERROR_NO_WALLET" {
-                        set_status_msg.set("ERROR: PHANTOM NOT INSTALLED.".into());
+                        set_status_msg.set("PHANTOM NOT FOUND. PLEASE INSTALL.".into());
                     } else if addr == "ERROR_REJECTED" {
                         set_status_msg.set("CONNECTION REJECTED BY USER.".into());
                     } else if !addr.is_empty() {
@@ -92,7 +101,7 @@ pub fn App() -> impl IntoView {
                     }
                 }
                 Err(_) => {
-                    set_status_msg.set("ERROR: BRIDGE NOT INITIALIZED.".into());
+                    set_status_msg.set("ERROR: HANDSHAKE CRASHED.".into());
                 }
             }
         });
