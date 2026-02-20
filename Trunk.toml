@@ -1,24 +1,16 @@
 [build]
-# The entry point for the application.
 target = "index.html"
-
-# The directory where the final build artifacts will be placed.
 dist = "dist"
-
-# The base URL for the application. 
-# "/" is standard for Vercel root deployments.
 public_url = "/"
 
-# CRITICAL: This copies your bridge and CSS from /public to /dist
-# so the relative paths in your index.html work perfectly.
+# CRITICAL: This tells Trunk to take everything in your /public folder
+# and copy it directly into the /dist folder that Vercel deploys.
 [[build.copy_public]]
 from = "public"
 
 [watch]
-# Ignore the distribution folder to prevent infinite rebuild loops.
 ignore = ["dist"]
 
 [serve]
-# Local development port.
 port = 8080
 open = false
