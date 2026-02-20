@@ -3,8 +3,8 @@ use leptos::CollectView;
 use gloo_net::http::Request;
 use gloo_timers::future::TimeoutFuture;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
-use js_sys::{Reflect, Promise};
+use wasm_bindgen_futures::spawn_local; // Kept spawn_local for async tasks
+use js_sys::Reflect; // Removed unused Promise to clear warnings
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use web_sys::HtmlElement;
@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 #[wasm_bindgen]
 extern "C" {
-    // These bind to the window.vext object defined in webauthn_bridge.js
+    // These bind directly to the window.vext object defined in webauthn_bridge.js
     #[wasm_bindgen(js_namespace = ["vext"], catch)]
     async fn connectWallet() -> Result<JsValue, JsValue>;
 
@@ -74,7 +74,7 @@ pub fn App() -> impl IntoView {
         }
     });
 
-    // Linking wallet via Global JS Bridge
+    // Link Wallet logic using the Global Bridge
     let link_wallet = move |_| {
         set_status_msg.set("COMMUNICATING WITH GLOBAL BRIDGE...".into());
         spawn_local(async move {
@@ -286,7 +286,6 @@ pub fn App() -> impl IntoView {
                 } else { view! { <div class="hidden"></div> }.into_view() }}
             </div>
             
-            // Fixed SVG attribute braces for Leptos compatibility
             <div class="nav-icon" style="position:fixed; bottom:20px; right:20px; cursor:pointer;">
                 <svg 
                     width="30" 
