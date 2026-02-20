@@ -1,196 +1,106 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VEXT | Institutional Intent Vault</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEXT | Institutional Intent Vault</title>
+    
+    <!-- 
+      TRUNK ASSET PIPELINE:
+      We update the href to 'public/style.css' so Trunk can find it.
+      Trunk will then process this, hash it for security, and move it 
+      to the /dist folder for you.
+    -->
+    <link data-trunk rel="css" href="public/style.css">
+    
+    <!-- 
+      INLINE BRIDGE: 
+      Since we inlined the bridge logic for safety, we don't need 
+      to point to an external JS file here.
+    -->
+    <script>
+        (function() {
+            console.log("🛡️ VEXT: Hardened Inline Bridge Initializing...");
+            window.vext = {
+                connectWallet: function() {
+                    console.log("🔵 VEXT: Wallet Handshake Request Received.");
+                    return new Promise((resolve) => {
+                        const timeout = setTimeout(() => {
+                            console.error("🔴 VEXT: Connection timeout");
+                            resolve("ERROR_TIMEOUT");
+                        }, 30000);
 
-<style>
-    body { background: #020617; margin: 0; font-family: 'Inter', sans-serif; color: white; overflow-x: hidden; }
-    .diagnostic-panel {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #0f172a;
-        border: 1px solid #1e293b;
-        padding: 20px;
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        z-index: 9999;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-        width: 90%;
-        max-width: 360px;
-    }
-    .diag-title { font-size: 11px; font-weight: 800; color: #3b82f6; letter-spacing: 0.1em; text-transform: uppercase; }
-    .diag-btn {
-        background: #3b82f6;
-        color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 12px;
-        transition: background 0.2s;
-    }
-    .diag-btn:hover { background: #2563eb; }
-    .diag-status { 
-        font-size: 10px; 
-        color: #94a3b8; 
-        font-family: 'JetBrains Mono', monospace; 
-        background: rgba(0,0,0,0.2); 
-        padding: 8px; 
-        border-radius: 4px;
-        word-break: break-all;
-        min-height: 24px;
-    }
-    .container { display: flex; justify-content: center; align-items: center; min-height: 100vh; width: 100%; }
-</style>
-
-<script>
-    /**
-     * VEXT Global Bridge (v3.9 - Inline Hardware Enclave)
-     * Inlining here guarantees that the 'vext' object is ready 
-     * BEFORE the WASM engine attempts its initial handshake.
-     */
-    (function() {
-        console.log("🛡️ VEXT: Hardened Inline Bridge Initializing...");
-
-        window.vext = {
-            // Returns the current connection state of the Phantom provider
-            getStatus: function() {
-                const isConnected = window.solana?.isConnected || false;
-                console.log("🔵 VEXT Status Check:", isConnected ? "CONNECTED" : "DISCONNECTED");
-                return isConnected;
-            },
-
-            // Logic to test and connect in one flow
-            connectWallet: function() {
-                console.log("🔵 VEXT: Handshake Request...");
-                
-                return new Promise((resolve) => {
-                    // 1. Is the extension even there?
-                    if (!window.solana || !window.solana.isPhantom) {
-                        console.error("🔴 VEXT: Phantom not found.");
-                        resolve("ERROR_NO_WALLET");
-                        return; 
-                    }
-
-                    // 2. Are we already connected? If so, just return the key.
-                    if (window.solana.isConnected && window.solana.publicKey) {
-                        console.log("🟢 VEXT: Already Connected:", window.solana.publicKey.toString());
-                        resolve(window.solana.publicKey.toString());
-                        return;
-                    }
-
-                    // 3. Trigger the connection popup
-                    window.solana.connect({ onlyIfTrusted: false })
-                        .then((resp) => {
-                            const pubKey = resp.publicKey.toString();
-                            console.log("🟢 VEXT: Manual Success:", pubKey);
-                            resolve(pubKey);
-                        })
-                        .catch((err) => {
-                            console.error("🔴 VEXT: Connection Error:", err.code);
-                            resolve(err.code === 4001 ? "ERROR_USER_REJECTED" : "ERROR_REJECTED");
-                        });
-                });
-            },
-
-            // Vector 3: Hardware Signing Bridge
-            signWithHardware: function(challengeHex) {
-                console.log("🔵 VEXT: Hardware Attestation Requested.");
-                return new Promise((resolve) => {
-                    try {
-                        const binaryString = atob(challengeHex);
-                        const challengeBytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            challengeBytes[i] = binaryString.charCodeAt(i);
+                        if (!window.solana || !window.solana.isPhantom) {
+                            console.error("🔴 VEXT: Phantom not found.");
+                            clearTimeout(timeout);
+                            resolve("ERROR_NO_WALLET");
+                            return; 
                         }
 
-                        navigator.credentials.get({
-                            publicKey: {
-                                challenge: challengeBytes,
-                                userVerification: "required",
-                                timeout: 60000,
-                                rpId: window.location.hostname === "localhost" ? "localhost" : window.location.hostname
-                            }
-                        }).then((credential) => {
-                            if (!credential) return resolve(null);
-                            const response = credential.response;
-                            const bufferToBase64 = (buf) => window.btoa(String.fromCharCode(...new Uint8Array(buf)));
-                            resolve({
-                                signature: bufferToBase64(response.signature),
-                                clientData: bufferToBase64(response.clientDataJSON),
-                                authenticatorData: bufferToBase64(response.authenticatorData)
+                        if (window.solana.isConnected && window.solana.publicKey) {
+                            clearTimeout(timeout);
+                            const pubKey = window.solana.publicKey.toString();
+                            console.log("🟢 VEXT: Already Connected:", pubKey);
+                            resolve(pubKey);
+                            return;
+                        }
+
+                        window.solana.connect({ onlyIfTrusted: false })
+                            .then((resp) => {
+                                clearTimeout(timeout);
+                                const pubKey = resp.publicKey.toString();
+                                console.log("🟢 VEXT: Wallet Handshake Success:", pubKey);
+                                resolve(pubKey);
+                            })
+                            .catch((err) => {
+                                clearTimeout(timeout);
+                                console.error("🔴 VEXT: Wallet Error:", err);
+                                resolve(err.code === 4001 ? "ERROR_USER_REJECTED" : "ERROR_REJECTED");
                             });
-                        }).catch((err) => {
-                            console.error("🔴 VEXT: Hardware Fail:", err);
-                            resolve(null);
-                        });
-                    } catch (err) {
-                        resolve(null);
-                    }
-                });
-            }
-        };
-        console.log("🛡️ VEXT: Bridge Fully Operational.");
-    })();
+                    });
+                },
 
-    // Diagnostic UI Helper
-    async function runDiagnostic() {
-        const statusLabel = document.getElementById('diag-label');
-        statusLabel.innerText = "QUERYING PROVIDER...";
-        
-        // First, check if already connected
-        const connected = window.vext.getStatus();
-        
-        if (connected) {
-            statusLabel.innerText = "ALREADY CONNECTED: " + window.solana.publicKey.toString().substring(0, 12) + "...";
-            statusLabel.style.color = "#4ade80";
-        } else {
-            statusLabel.innerText = "DISCONNECTED. TRIGGERING POPUP...";
-            statusLabel.style.color = "#94a3b8";
-            
-            const result = await window.vext.connectWallet();
-            
-            if (result.length > 20) {
-                statusLabel.innerText = "HANDSHAKE SUCCESS: " + result.substring(0, 12) + "...";
-                statusLabel.style.color = "#4ade80";
-            } else {
-                statusLabel.innerText = "HANDSHAKE FAILED: " + result;
-                statusLabel.style.color = "#f87171";
-            }
-        }
-    }
-</script>
-
-<link rel="rust" data-trunk href="Cargo.toml" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
-
-
+                signWithHardware: function(challengeHex) {
+                    console.log("🔵 VEXT: Hardware Attestation Initiated...");
+                    return new Promise((resolve) => {
+                        try {
+                            const bytes = new Uint8Array(atob(challengeHex).split("").map(c => c.charCodeAt(0)));
+                            navigator.credentials.get({
+                                publicKey: {
+                                    challenge: bytes,
+                                    userVerification: "required",
+                                    timeout: 60000,
+                                    rpId: window.location.hostname === "localhost" ? "localhost" : window.location.hostname
+                                }
+                            }).then((cred) => {
+                                if (!cred) return resolve(null);
+                                const b64 = (buf) => window.btoa(String.fromCharCode(...new Uint8Array(buf)));
+                                resolve({
+                                    signature: b64(cred.response.signature),
+                                    clientData: b64(cred.response.clientDataJSON),
+                                    authenticatorData: b64(cred.response.authenticatorData)
+                                });
+                            }).catch((err) => {
+                                console.error("🔴 VEXT: Hardware Fail:", err);
+                                resolve(null);
+                            });
+                        } catch (e) { resolve(null); }
+                    });
+                }
+            };
+            console.log("🛡️ VEXT: Bridge Fully Operational.");
+        })();
+    </script>
+    
+    <link rel="rust" data-trunk href="Cargo.toml" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
 </head>
-<body>
-
-<div id="vext-root" class="container"></div>
-
-<!-- TROUBLESHOOTING PANEL -->
-<div class="diagnostic-panel">
-    <div class="diag-title">VEXT Diagnostic & Handshake Tool</div>
-    <button class="diag-btn" onclick="runDiagnostic()">TEST & CONNECT PHANTOM</button>
-    <div id="diag-label" class="diag-status">STATUS: STANDBY</div>
-</div>
-
-<noscript>
-    <div style="color: white; text-align: center; padding: 20px;">
-        <h1>Institutional Security Requires JavaScript</h1>
-    </div>
-</noscript>
-
-
+<body style="background: #020617; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif;">
+    <div id="vext-root"></div>
+    <noscript>
+        <div style="color: white; text-align: center; padding: 20px;">
+            <h1>Institutional Security Requires JavaScript</h1>
+        </div>
+    </noscript>
 </body>
 </html>

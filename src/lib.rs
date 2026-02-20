@@ -78,7 +78,6 @@ pub fn App() -> impl IntoView {
     let link_wallet = move |_| {
         set_status_msg.set("INITIATING HARDWARE HANDSHAKE...".into());
         spawn_local(async move {
-            // Safety Check: Verify the JS bridge is actually there
             let window = web_sys::window().unwrap();
             let vext = Reflect::get(&window, &"vext".into()).unwrap_or(JsValue::UNDEFINED);
             
