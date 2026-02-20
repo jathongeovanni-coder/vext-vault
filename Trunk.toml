@@ -1,14 +1,22 @@
 [build]
+# The entry point for the application.
 target = "index.html"
+
+# The directory where the final build artifacts will be placed.
 dist = "dist"
+
+# The base URL for the application.
 public_url = "/"
 
-# CRITICAL: This tells Trunk to take everything in your /public folder
+# THE REPLAY SHIELD:
+# This tells Trunk to take everything in your /public folder
 # and copy it directly into the /dist folder that Vercel deploys.
+# This ensures webauthn_bridge.js is exactly where the browser expects it.
 [[build.copy_public]]
 from = "public"
 
 [watch]
+# Ignore the distribution folder to prevent infinite rebuild loops.
 ignore = ["dist"]
 
 [serve]

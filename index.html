@@ -6,16 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VEXT | Institutional Intent Vault</title>
 
-<!-- Professional UI Styling -->
-<!-- We remove the leading slash because Trunk copies this from /public to /dist root -->
-<link rel="stylesheet" href="style.css">
-
 <!-- 
-  THE GLOBAL BRIDGE: 
-  Loads before the WASM engine. By placing this in the /public folder 
-  and referencing it relatively, we ensure Vercel serves the JS file 
-  instead of falling back to index.html.
+  STATIC ASSET STRATEGY:
+  Since Trunk copies 'style.css' and 'webauthn_bridge.js' from the 
+  /public folder into the root of /dist, we reference them here 
+  without a folder prefix or leading slash.
 -->
+<link rel="stylesheet" href="style.css">
 <script src="webauthn_bridge.js"></script>
 
 <!-- Standard Trunk link for the Rust logic -->
@@ -27,7 +24,6 @@
 </head>
 <body style="background: #020617; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif;">
 
-<!-- The VEXT Deployment Mounting Point -->
 <div id="vext-root" style="width: 100%; display: flex; justify-content: center;"></div>
 
 <noscript>
