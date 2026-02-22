@@ -1,19 +1,25 @@
-# Rust
+Rust build artifacts
+
 /target/
 /Cargo.lock
 
-# Trunk
+Trunk build artifacts
+
 /dist/
 /.trunk/
 
-# Tooling
+Tooling & Cache
+
 /node_modules/
 .wasm-cache/
 
-# OS
+OS specific files
+
 .DS_Store
 Thumbs.db
+**/*.rs.bk
 
-# Env
+Environment & Secrets
+
 .env
 .env.*

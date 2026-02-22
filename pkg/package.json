@@ -1,0 +1,15 @@
+{
+  "name": "vext_sync",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "vext_sync_bg.wasm",
+    "vext_sync.js",
+    "vext_sync.d.ts"
+  ],
+  "main": "vext_sync.js",
+  "types": "vext_sync.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

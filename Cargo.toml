@@ -1,67 +1,46 @@
 [package]
 name = "vext-vault"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
-license = "Apache-2.0 OR MIT"
-description = "VEXT Vault - Institutional Human Intent Attestation"
-authors = ["VEXT Labs <security@vext.com>"]
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-# UI Framework - CSR only for high-performance edge deployment
-# We only use the core leptos crate to keep the WASM size small
+# UI Framework
 leptos = { version = "0.6.15", features = ["csr"] }
 
-# WASM Bindings
+# WASM & JS Interop
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 
-# Web-Sys (Precision-scoped for Hardware & UI interaction)
+# Updated web-sys features to support Mobile Touch Sensors and Events
+# This is critical to fix the "type mismatch" errors
 web-sys = { version = "0.3", features = [
-  "Window", 
-  "Document", 
-  "HtmlElement", 
-  "Location", 
-  "Element", 
-  "UrlSearchParams", 
-  "console", 
-  "MouseEvent", 
-  "TouchEvent",
-  "CredentialsContainer",
-  "PublicKeyCredential",
-  "AuthenticatorResponse",
-  "AuthenticatorAssertionResponse",
-  "PublicKeyCredentialRequestOptions"
+    "Window", 
+    "Document", 
+    "HtmlElement", 
+    "console", 
+    "MouseEvent", 
+    "TouchEvent", 
+    "Event"
 ] }
 
-# Async & Networking
-futures = "0.3"
+# Security & Utils
 gloo-timers = { version = "0.3", features = ["futures"] }
 gloo-net = { version = "0.5", features = ["http"] }
-
-# Cryptography & Security (The "Hardened" Stack)
-ed25519-dalek = { version = "2.1", features = ["rand_core"] }
-uuid = { version = "1.7", features = ["v4", "js"] }
-hex = "0.4"
-base64 = "0.22"
-
-# Data Handling
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# Utilities
+uuid = { version = "1.7", features = ["v4", "js"] }
 console_error_panic_hook = "0.1"
 
-# Target-specific dependencies for Browser Randomness
-# This is essential to prevent "getrandom" errors in WASM
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 
+# Production Optimization
 [profile.release]
-opt-level = 'z'       # Optimize for the smallest WASM binary size
-lto = true            # Link Time Optimization for performance
-codegen-units = 1     # Slower build, but better optimization
-panic = 'abort'       # Smaller binary, no unwinding
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'

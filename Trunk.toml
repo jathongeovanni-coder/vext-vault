@@ -1,24 +1,20 @@
 [build]
-# The entry point for the application.
+# Points to your main entry file
 target = "index.html"
 
-# The directory where the final build artifacts will be placed.
-# Changed from true to "dist" to satisfy the Trunk parser.
+# Where the final "shippable" files go
 dist = "dist"
 
-# The base URL for the application.
+# Ensures Vercel knows where to find the app
 public_url = "/"
 
-# This ensures any assets in your 'public' folder 
-# (like style.css) are copied to the final deployment.
+# This copies everything from /public to the final folder
 [[build.copy_public]]
 from = "public"
 
 [watch]
-# Prevents Trunk from getting stuck in a loop by ignoring the build folder.
 ignore = ["dist"]
 
 [serve]
-# Local development port.
 port = 8080
 open = false

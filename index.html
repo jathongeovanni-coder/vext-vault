@@ -2,105 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 
+      THE MOBILE SHIELD (Meta): 
+      'user-scalable=no' prevents the phone from zooming in if you tap rapidly 
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VEXT | Institutional Intent Vault</title>
     
-    <!-- 
-      TRUNK ASSET PIPELINE:
-      We update the href to 'public/style.css' so Trunk can find it.
-      Trunk will then process this, hash it for security, and move it 
-      to the /dist folder for you.
-    -->
-    <link data-trunk rel="css" href="public/style.css">
-    
-    <!-- 
-      INLINE BRIDGE: 
-      Since we inlined the bridge logic for safety, we don't need 
-      to point to an external JS file here.
-    -->
+    <style>
+        /* THE GLOBAL MOBILE SHIELD: 
+           Disables tap highlights and long-press menus across the whole app 
+        */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+        
+        body { background: #020617; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
+    </style>
+
     <script>
         (function() {
             console.log("🛡️ VEXT: Hardened Inline Bridge Initializing...");
             window.vext = {
                 connectWallet: function() {
-                    console.log("🔵 VEXT: Wallet Handshake Request Received.");
                     return new Promise((resolve) => {
-                        const timeout = setTimeout(() => {
-                            console.error("🔴 VEXT: Connection timeout");
-                            resolve("ERROR_TIMEOUT");
-                        }, 30000);
-
-                        if (!window.solana || !window.solana.isPhantom) {
-                            console.error("🔴 VEXT: Phantom not found.");
-                            clearTimeout(timeout);
-                            resolve("ERROR_NO_WALLET");
-                            return; 
-                        }
-
-                        if (window.solana.isConnected && window.solana.publicKey) {
-                            clearTimeout(timeout);
-                            const pubKey = window.solana.publicKey.toString();
-                            console.log("🟢 VEXT: Already Connected:", pubKey);
-                            resolve(pubKey);
-                            return;
-                        }
-
+                        if (!window.solana) { resolve("ERROR_NO_WALLET"); return; }
                         window.solana.connect({ onlyIfTrusted: false })
-                            .then((resp) => {
-                                clearTimeout(timeout);
-                                const pubKey = resp.publicKey.toString();
-                                console.log("🟢 VEXT: Wallet Handshake Success:", pubKey);
-                                resolve(pubKey);
-                            })
-                            .catch((err) => {
-                                clearTimeout(timeout);
-                                console.error("🔴 VEXT: Wallet Error:", err);
-                                resolve(err.code === 4001 ? "ERROR_USER_REJECTED" : "ERROR_REJECTED");
-                            });
+                            .then(resp => resolve(resp.publicKey.toString()))
+                            .catch(() => resolve("ERROR_REJECTED"));
                     });
                 },
-
                 signWithHardware: function(challengeHex) {
-                    console.log("🔵 VEXT: Hardware Attestation Initiated...");
                     return new Promise((resolve) => {
                         try {
                             const bytes = new Uint8Array(atob(challengeHex).split("").map(c => c.charCodeAt(0)));
                             navigator.credentials.get({
-                                publicKey: {
-                                    challenge: bytes,
-                                    userVerification: "required",
-                                    timeout: 60000,
-                                    rpId: window.location.hostname === "localhost" ? "localhost" : window.location.hostname
-                                }
-                            }).then((cred) => {
+                                publicKey: { challenge: bytes, userVerification: "required", timeout: 60000, rpId: window.location.hostname }
+                            }).then(cred => {
                                 if (!cred) return resolve(null);
-                                const b64 = (buf) => window.btoa(String.fromCharCode(...new Uint8Array(buf)));
-                                resolve({
-                                    signature: b64(cred.response.signature),
-                                    clientData: b64(cred.response.clientDataJSON),
-                                    authenticatorData: b64(cred.response.authenticatorData)
-                                });
-                            }).catch((err) => {
-                                console.error("🔴 VEXT: Hardware Fail:", err);
-                                resolve(null);
-                            });
+                                const b64 = (b) => window.btoa(String.fromCharCode(...new Uint8Array(b)));
+                                resolve({ signature: b64(cred.response.signature), clientData: b64(cred.response.clientDataJSON), authenticatorData: b64(cred.response.authenticatorData) });
+                            }).catch(() => resolve(null));
                         } catch (e) { resolve(null); }
                     });
                 }
             };
-            console.log("🛡️ VEXT: Bridge Fully Operational.");
         })();
     </script>
     
     <link rel="rust" data-trunk href="Cargo.toml" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <link data-trunk rel="css" href="public/style.css" />
 </head>
-<body style="background: #020617; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif;">
+<body oncontextmenu="return false;">
     <div id="vext-root"></div>
-    <noscript>
-        <div style="color: white; text-align: center; padding: 20px;">
-            <h1>Institutional Security Requires JavaScript</h1>
-        </div>
-    </noscript>
 </body>
 </html>
