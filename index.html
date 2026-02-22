@@ -3,29 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <!-- 
-      THE MOBILE SHIELD (Meta): 
-      'user-scalable=no' prevents the phone from zooming in if you tap rapidly 
+      THE VIEWPORT LOCK: 
+      'viewport-fit=cover' ensures the app uses the full screen (around the notch).
+      'user-scalable=no' prevents the accidental zoom that can push the card off-center.
     -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>VEXT | Institutional Intent Vault</title>
     
     <style>
-        /* THE GLOBAL MOBILE SHIELD: 
-           Disables tap highlights and long-press menus across the whole app 
+        /* INLINE CENTERING ENGINE: 
+           This ensures the card snaps to the center before the main CSS even loads.
         */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none !important;
-            -webkit-user-select: none !important;
-            user-select: none !important;
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #020617;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Stops the side-to-side drifting */
         }
-        
-        body { background: #020617; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
     </style>
 
+    <!-- INLINED HARDENED BRIDGE -->
     <script>
         (function() {
-            console.log("🛡️ VEXT: Hardened Inline Bridge Initializing...");
             window.vext = {
                 connectWallet: function() {
                     return new Promise((resolve) => {
@@ -40,11 +44,20 @@
                         try {
                             const bytes = new Uint8Array(atob(challengeHex).split("").map(c => c.charCodeAt(0)));
                             navigator.credentials.get({
-                                publicKey: { challenge: bytes, userVerification: "required", timeout: 60000, rpId: window.location.hostname }
+                                publicKey: { 
+                                    challenge: bytes, 
+                                    userVerification: "required", 
+                                    timeout: 60000, 
+                                    rpId: window.location.hostname 
+                                }
                             }).then(cred => {
                                 if (!cred) return resolve(null);
                                 const b64 = (b) => window.btoa(String.fromCharCode(...new Uint8Array(b)));
-                                resolve({ signature: b64(cred.response.signature), clientData: b64(cred.response.clientDataJSON), authenticatorData: b64(cred.response.authenticatorData) });
+                                resolve({ 
+                                    signature: b64(cred.response.signature), 
+                                    clientData: b64(cred.response.clientDataJSON), 
+                                    authenticatorData: b64(cred.response.authenticatorData) 
+                                });
                             }).catch(() => resolve(null));
                         } catch (e) { resolve(null); }
                     });
@@ -53,6 +66,7 @@
         })();
     </script>
     
+    <!-- Trunk build triggers -->
     <link rel="rust" data-trunk href="Cargo.toml" />
     <link data-trunk rel="css" href="public/style.css" />
 </head>

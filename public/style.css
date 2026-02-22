@@ -1,5 +1,5 @@
-/* VEXT Vault: Institutional Mobile Shield (v4.1)
-   Ensures that long-press interactions do not trigger system menus.
+/* VEXT Vault: Institutional Mobile Shield (v4.2)
+   Layout Fix: Forced Centering & Viewport Lock
 */
 
 :root {
@@ -11,37 +11,49 @@
     --success: #10b981;
 }
 
-body {
+/* GLOBAL RESET: Prevents "off-to-the-right" shifting */
+* {
     margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    
+    /* THE CENTERING ENGINE */
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
-    /* Prevents the "Pull to Refresh" gesture from breaking the vault experience */
+    
+    overflow-x: hidden; /* Prevents horizontal scrolling */
     overscroll-behavior-y: contain;
 }
 
 .container { 
     width: 100%; 
-    max-width: 400px; 
-    padding: 20px; 
-    box-sizing: border-box; 
+    max-width: 380px; /* Slightly narrower for better mobile fit */
+    padding: 20px;
+    display: flex;
+    justify-content: center;
 }
 
 .vault-card {
     background: var(--card);
     width: 100%;
-    padding: 30px;
+    padding: 28px;
     border-radius: 28px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    position: relative;
 }
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .logo { font-weight: 900; font-size: 22px; color: var(--accent); letter-spacing: -0.05em; }
 
 .status-pill { 
@@ -68,7 +80,6 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     border: 1px solid rgba(255, 255, 255, 0.03);
 }
 .price-item.selected { border-color: var(--accent); background: rgba(59, 130, 246, 0.08); }
-.price-item strong { font-family: monospace; font-size: 15px; }
 
 .status-monitor { 
     font-size: 10px; 
@@ -78,7 +89,6 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     font-family: monospace; 
     text-transform: uppercase; 
     letter-spacing: 0.05em; 
-    height: 12px;
 }
 
 .action-btn { 
@@ -88,22 +98,18 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     border: none; 
     font-weight: 800; 
     cursor: pointer;
-    transition: transform 0.1s ease;
     
-    /* THE MOBILE SHIELD (CSS) */
+    /* MOBILE SHIELD */
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
     user-select: none !important;
-    /* touch-action: none prevents the OS from trying to scroll while holding */
     touch-action: none !important;
 }
 
-.action-btn:active { transform: scale(0.97); }
 .action-btn.primary { background: var(--accent); color: white; }
 .action-btn.hold { background: #1e293b; color: white; position: relative; overflow: hidden; }
-.action-btn.authorize { background: var(--success); color: white; }
 
-.hold-container { position: relative; width: 100%; }
+.hold-container { position: relative; width: 100%; border-radius: 16px; overflow: hidden; }
 .progress-bar { 
     position: absolute; 
     bottom: 0; 
@@ -112,9 +118,7 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     background: var(--accent); 
     transition: width 0.1s linear; 
 }
-.progress-bar.auth { background: white; height: 100%; opacity: 0.15; top: 0; }
 
 .history-log { margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px; }
-.history-log h3 { font-size: 10px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+.history-log h3 { font-size: 10px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; }
 .empty-msg { font-size: 10px; color: var(--muted); font-style: italic; text-align: center; opacity: 0.5; }
-.log-entry { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-family: monospace; margin-bottom: 4px; }
